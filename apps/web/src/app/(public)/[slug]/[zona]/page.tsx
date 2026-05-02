@@ -130,7 +130,7 @@ export default async function CategoriaZonaPage({
         {/* Lista imprese */}
         {imprese.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {imprese.map((c) => (
+            {imprese.map((c: any) => (
               <ImpresaCard key={c.id} company={c} />
             ))}
           </div>
