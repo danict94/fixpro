@@ -1,0 +1,120 @@
+<svg width="360" height="260" viewBox="0 0 360 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="360" height="260" fill="none"/>
+
+  <!-- Ambient background -->
+  <path
+    d="M70.2 203.1C37.6 178.5 31.4 125.7 55.3 84.8C80.1 42.5 129.4 25.1 178.7 29.2C228 33.3 278.1 61.6 300 103C322.1 144.7 306.8 196.1 263.7 219C220.6 241.9 102.8 227.8 70.2 203.1Z"
+    fill="#F6F8FC"
+  />
+
+  <circle cx="292" cy="62" r="24" fill="#E7EEF9"/>
+  <circle cx="66" cy="198" r="18" fill="#EAF7F0"/>
+
+  <!-- Central request card -->
+  <g filter="url(#mainShadow)">
+    <rect x="107" y="66" width="146" height="128" rx="26" fill="#FFFFFF"/>
+    <rect x="107.5" y="66.5" width="145" height="127" rx="25.5" stroke="#E6ECF3"/>
+  </g>
+
+  <!-- Request header -->
+  <rect x="132" y="93" width="70" height="8.5" rx="4.25" fill="#111827"/>
+  <rect x="132" y="111" width="94" height="6" rx="3" fill="#CBD5E1"/>
+  <rect x="132" y="124" width="72" height="6" rx="3" fill="#E2E8F0"/>
+
+  <!-- Incoming replies rows -->
+  <rect x="132" y="148" width="96" height="28" rx="14" fill="#F8FAFC" stroke="#E5EAF0"/>
+  <circle cx="147" cy="162" r="7" fill="#2563EB"/>
+  <path d="M144 162L147 165L151.5 159" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="163" y="157" width="44" height="5" rx="2.5" fill="#94A3B8"/>
+  <rect x="163" y="167" width="28" height="4.5" rx="2.25" fill="#CBD5E1"/>
+
+  <!-- Left professional response -->
+  <g filter="url(#cardShadow)">
+    <rect x="42" y="91" width="112" height="70" rx="22" fill="#FFFFFF"/>
+    <rect x="42.5" y="91.5" width="111" height="69" rx="21.5" stroke="#E6ECF3"/>
+  </g>
+
+  <circle cx="68" cy="119" r="13" fill="#DBEAFE"/>
+  <path d="M61 121C63.5 116.5 72.5 116.5 75 121" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="68" cy="114" r="4.5" fill="#2563EB"/>
+
+  <rect x="88" y="110" width="40" height="6" rx="3" fill="#1E293B"/>
+  <rect x="88" y="123" width="48" height="5" rx="2.5" fill="#CBD5E1"/>
+  <rect x="88" y="135" width="34" height="5" rx="2.5" fill="#E2E8F0"/>
+
+  <!-- Right professional response -->
+  <g filter="url(#cardShadow)">
+    <rect x="205" y="101" width="116" height="74" rx="22" fill="#FFFFFF"/>
+    <rect x="205.5" y="101.5" width="115" height="73" rx="21.5" stroke="#E6ECF3"/>
+  </g>
+
+  <circle cx="232" cy="130" r="13" fill="#ECFDF5"/>
+  <path d="M225 132C227.5 127.5 236.5 127.5 239 132" stroke="#10B981" stroke-width="2.2" stroke-linecap="round"/>
+  <circle cx="232" cy="125" r="4.5" fill="#10B981"/>
+
+  <rect x="252" y="120" width="42" height="6" rx="3" fill="#1E293B"/>
+  <rect x="252" y="133" width="48" height="5" rx="2.5" fill="#CBD5E1"/>
+  <rect x="252" y="145" width="30" height="5" rx="2.5" fill="#E2E8F0"/>
+
+  <!-- Top notification -->
+  <g filter="url(#badgeShadow)">
+    <rect x="124" y="28" width="112" height="42" rx="21" fill="#FFFFFF"/>
+    <rect x="141" y="42" width="18" height="18" rx="9" fill="#EEF6FF"/>
+    <path d="M146.5 51H153.5" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M150 47.5V54.5" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round"/>
+    <text
+      x="168"
+      y="55"
+      font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+      font-size="12"
+      font-weight="700"
+      fill="#334155"
+    >
+      Nuove risposte
+    </text>
+  </g>
+
+  <!-- Connection lines -->
+  <path d="M153 125C171 119 187 119 205 127" stroke="#DDE7F3" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 8"/>
+  <path d="M204 142C190 151 172 151 154 142" stroke="#DDE7F3" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 8"/>
+  <path d="M180 70V48" stroke="#DDE7F3" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="5 8"/>
+
+  <!-- Small message indicators -->
+  <g filter="url(#smallShadow)">
+    <rect x="68" y="172" width="92" height="38" rx="19" fill="#FFFFFF"/>
+  </g>
+  <circle cx="87" cy="191" r="6" fill="#10B981"/>
+  <rect x="101" y="185" width="36" height="5" rx="2.5" fill="#64748B"/>
+  <rect x="101" y="196" width="24" height="4.5" rx="2.25" fill="#CBD5E1"/>
+
+  <g filter="url(#smallShadow)">
+    <rect x="211" y="187" width="80" height="36" rx="18" fill="#FFFFFF"/>
+  </g>
+  <circle cx="229" cy="205" r="6" fill="#2563EB"/>
+  <rect x="243" y="199" width="28" height="5" rx="2.5" fill="#64748B"/>
+  <rect x="243" y="210" width="20" height="4.5" rx="2.25" fill="#CBD5E1"/>
+
+  <!-- Decorative strokes -->
+  <path d="M286 76C298 83 306 93 310 106" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 74C51 81 46 91 44 103" stroke="#86EFAC" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="255" cy="42" r="5" fill="#2563EB"/>
+  <circle cx="95" cy="42" r="4" fill="#10B981"/>
+
+  <defs>
+    <filter id="mainShadow" x="83" y="48" width="194" height="176" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.13"/>
+    </filter>
+
+    <filter id="cardShadow" x="24" y="79" width="315" height="114" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+
+    <filter id="badgeShadow" x="108" y="18" width="144" height="74" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+
+    <filter id="smallShadow" x="52" y="162" width="255" height="77" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.09"/>
+    </filter>
+  </defs>
+</svg>

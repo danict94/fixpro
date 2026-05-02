@@ -1,0 +1,45 @@
+{
+  "name": "@fixpro/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- next dev --port 3000",
+    "build": "dotenv -e ../../.env -v NODE_ENV=production -o -- next build",
+    "start": "dotenv -e ../../.env -- next start --port 3000",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@fixpro/api": "workspace:*",
+    "@fixpro/db": "workspace:*",
+    "@fixpro/shared": "workspace:*",
+    "@fixpro/ui": "workspace:*",
+    "@sentry/nextjs": "^10.49.0",
+    "@tanstack/react-query": "^5.69.0",
+    "@trpc/client": "^11.1.0",
+    "@trpc/react-query": "^11.1.0",
+    "@trpc/server": "^11.1.0",
+    "@uploadthing/react": "^7.3.3",
+    "better-auth": "^1.2.7",
+    "lucide-react": "^0.475.0",
+    "next": "^15.2.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "resend": "^6.10.0",
+    "stripe": "^17.7.0",
+    "superjson": "^2.2.2",
+    "twilio": "^5.13.1",
+    "uploadthing": "^7.7.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/google.maps": "^3.58.1",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "dotenv-cli": "^8.0.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "*"
+  }
+}

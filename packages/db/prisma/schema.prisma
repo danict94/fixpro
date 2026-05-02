@@ -1,0 +1,740 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum AdminAuditAction {
+  LOGIN
+  INVITE_ADMIN
+  REVOKE_ADMIN
+  CHANGE_ADMIN_ROLE
+  FORCE_RESET_PASSWORD
+  APPROVE_REQUEST
+  REJECT_REQUEST
+  APPROVE_RESCUE
+  REJECT_RESCUE
+  ASSIGN_SUBSCRIPTION
+}
+
+model User {
+  id                  String              @id @default(cuid())
+  name                String
+  email               String              @unique
+  emailVerified       Boolean             @default(false)
+  image               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  adminRole           AdminRole?
+  adminSessionInvalidatedAt DateTime?     // Timestamp di revoca della sessione admin
+  role                ProductRole         @default(CLIENT)
+  phoneNumber         String?
+  phoneNumberVerified Boolean             @default(false)
+  accounts            Account[]
+  assistanceMessages  AssistanceMessage[] @relation("UserMessages")
+  company             Company?
+  notifications       Notification[]
+  clientRequests      ServiceRequest[]    @relation("ClientRequests")
+  sessions            Session[]
+  auditLogs           AdminAuditLog[]
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verifications")
+}
+
+model Settore {
+  id          String      @id @default(cuid())
+  nome        String      @unique
+  slug        String      @unique
+  descrizione String?
+  fase        String
+  ordine      Int         @default(0)
+  attivo      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  categorie   Categoria[]
+
+  @@map("settori")
+}
+
+model Categoria {
+  id                 String                  @id @default(cuid())
+  settoreId          String
+  nome               String
+  slug               String                  @unique
+  descrizione        String?
+  alias              String[]
+  searchTerms        String[]
+  ordine             Int                     @default(0)
+  attivo             Boolean                 @default(true)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  settore            Settore                 @relation(fields: [settoreId], references: [id])
+  companies          CompanyCategory[]
+  requests           ServiceRequest[]
+  servizi            Servizio[]
+  matchingInterventi MatchingInterventoCat[]
+
+  @@unique([settoreId, nome])
+  @@map("categorie")
+}
+
+model Servizio {
+  id                 String                       @id @default(cuid())
+  categoriaId        String
+  nome               String
+  slug               String                       @unique
+  descrizione        String?
+  alias              String[]
+  searchTerms        String[]
+  ordine             Int                          @default(0)
+  attivo             Boolean                      @default(true)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  requests           ServiceRequest[]
+  categoria          Categoria                    @relation(fields: [categoriaId], references: [id])
+  companies          CompanyService[]
+  matchingInterventi MatchingInterventoServizio[]
+
+  @@unique([categoriaId, nome])
+  @@map("servizi")
+}
+
+// ─── Tassonomia lato cliente + Matching ──────────────────────────────────────
+
+model Intervento {
+  id                String                       @id @default(cuid())
+  nome              String                       @unique
+  slug              String                       @unique
+  descrizione       String?
+  alias             String[]
+  searchTerms       String[]
+  attivo            Boolean                      @default(true)
+  ordine            Int                          @default(0)
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  matchingCategorie MatchingInterventoCat[]
+  matchingServizi   MatchingInterventoServizio[]
+  requests          ServiceRequest[]
+
+  @@map("interventi")
+}
+
+model MatchingInterventoCat {
+  interventoId String
+  categoriaId  String
+  priorita     Int        @default(0)
+  isPrimary    Boolean    @default(false)
+  attivo       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  intervento   Intervento @relation(fields: [interventoId], references: [id], onDelete: Cascade)
+  categoria    Categoria  @relation(fields: [categoriaId],  references: [id], onDelete: Cascade)
+
+  @@id([interventoId, categoriaId])
+  @@map("matching_intervento_cat")
+}
+
+model MatchingInterventoServizio {
+  interventoId String
+  servizioId   String
+  priorita     Int        @default(0)
+  attivo       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  intervento   Intervento @relation(fields: [interventoId], references: [id], onDelete: Cascade)
+  servizio     Servizio   @relation(fields: [servizioId],   references: [id], onDelete: Cascade)
+
+  @@id([interventoId, servizioId])
+  @@map("matching_intervento_servizio")
+}
+
+model Company {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  slug               String              @unique
+  ragioneSociale     String
+  partitaIva         String?             @unique
+  description        String?
+  descriptionExtended String?
+  logoUrl            String?
+  coverImageUrl      String?
+  galleryImages      String[]
+  phone              String?
+  website            String?
+  address            String?
+  streetNumber       String?             // numero civico
+  city               String?
+  province           String?
+  cap                String?
+  googlePlaceId      String?             // Google place_id per deduplicazione/arricchimento
+  lat                Float?
+  lng                Float?
+  radiusKm           Int                 @default(30)
+  workType           CompanyWorkType     @default(BOTH)
+  notificationEmail    Boolean             @default(true)
+  notificationWhatsapp Boolean             @default(false)
+  status             CompanyStatus       @default(PENDING)
+  suspendedReason    String?
+  verified           Boolean             @default(false)
+  adminNote          String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  assistanceMessages AssistanceMessage[] @relation("CompanyMessages")
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories         CompanyCategory[]
+  services           CompanyService[]
+  portfolioImages    CompanyPortfolioImage[]
+  creditBalance      CreditBalance?
+  creditBatches      CreditBatch[]
+  creditMovements    CreditMovement[]
+  purchases          RequestPurchase[]
+  rescues            Rescue[]
+  showcase           ShowcaseSubscription?
+  reviews            Review[]
+  targetedRequests   ServiceRequest[]      @relation("TargetedRequests")
+
+  @@map("companies")
+}
+
+model CompanyCategory {
+  companyId   String
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, categoriaId])
+  @@map("company_categories")
+}
+
+model CompanyService {
+  companyId  String
+  servizioId String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  servizio   Servizio @relation(fields: [servizioId], references: [id], onDelete: Cascade)
+
+  @@id([companyId, servizioId])
+  @@map("company_services")
+}
+
+model CompanyPortfolioImage {
+  id         String   @id @default(cuid())
+  companyId  String
+  url        String
+  storageKey String?
+  caption    String?
+  createdAt  DateTime @default(now())
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@map("company_portfolio_images")
+}
+
+model ServiceRequest {
+  id             String            @id @default(cuid())
+  clientId       String
+  categoriaId    String
+  servizioId     String?
+  workType       RequestWorkType   @default(UNKNOWN)
+  title          String
+  description    String
+  // Posizione
+  cap            String?
+  address        String?
+  streetNumber   String?
+  city           String?
+  province       String?
+  lat            Float?
+  lng            Float?
+  // Dettagli richiesta
+  propertyType   String?           // RESIDENTIAL | COMMERCIAL
+  urgency        String?           // WITHIN_1_MONTH | WITHIN_3_MONTHS | WITHIN_6_MONTHS | NO_PREFERENCE
+  hasImages      Boolean           @default(false)
+  intention      String?           // YES | MAYBE | INFO_ONLY
+  // Dati contatto (usati anche per richieste anonime)
+  contactName    String?
+  contactSurname String?
+  contactPhone   String?
+  contactEmail   String?
+  // Stato e gestione admin
+  status         RequestStatus     @default(PENDING)
+  creditCost        Int?
+  oneTimePriceCents Int?
+  maxBuyers         Int?              @default(3)
+  expiresAt      DateTime?
+  approvedAt     DateTime?
+  approvedBy     String?
+  rejectedAt     DateTime?
+  rejectedReason String?
+  // Contatto diretto da vetrina: company specifica a cui è diretta la richiesta
+  targetCompanyId String?
+  // Tassonomia lato cliente: intervento selezionato (migration path — categoriaId resta required per backward compat)
+  interventoId    String?
+  // Consenso privacy
+  privacyConsentAt      DateTime?          // timestamp accettazione privacy
+  privacyConsentVersion String?            // versione documento, es. "2026-01-01"
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  purchases      RequestPurchase[]
+  rescues        Rescue[]
+  images         RequestImage[]
+  categoria      Categoria         @relation(fields: [categoriaId], references: [id])
+  client         User              @relation("ClientRequests", fields: [clientId], references: [id])
+  servizio       Servizio?         @relation(fields: [servizioId], references: [id])
+  targetCompany  Company?          @relation("TargetedRequests", fields: [targetCompanyId], references: [id])
+  intervento     Intervento?       @relation(fields: [interventoId], references: [id])
+
+  @@index([status, expiresAt])
+  @@index([clientId])
+  @@index([targetCompanyId])
+  @@index([province])
+  @@map("service_requests")
+}
+
+model RequestImage {
+  id         String         @id @default(cuid())
+  requestId  String
+  url        String
+  storageKey String
+  createdAt  DateTime       @default(now())
+  request    ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId, createdAt])
+  @@map("request_images")
+}
+
+model RequestPurchase {
+  id                    String                @id @default(cuid())
+  companyId             String
+  requestId             String
+  paymentMethod         RequestPurchaseMethod @default(CREDITS)
+  contactSourceType     ContactSourceType     @default(MARKETPLACE_REQUEST)
+  creditSpent           Int                   @default(0)
+  stripePaymentIntentId String?               @unique
+  amountCents           Int?
+  baseAmountCents       Int?
+  baseCreditCost        Int?
+  finalCreditCost       Int?
+  discountPercent       Int?
+  discountReason        String?
+  planSnapshot          Json?
+  pricingContext        Json?
+  purchasedAt           DateTime              @default(now())
+  messages    ContactMessage[]
+  review      Review?
+  company     Company          @relation(fields: [companyId], references: [id])
+  request     ServiceRequest   @relation(fields: [requestId], references: [id])
+
+  @@unique([companyId, requestId])
+  @@index([companyId, purchasedAt])
+  @@index([requestId])
+  @@map("request_purchases")
+}
+
+model ContactMessage {
+  id         String            @id @default(cuid())
+  purchaseId String
+  senderType MessageSenderType
+  senderId   String
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime          @default(now())
+  purchase   RequestPurchase   @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@map("contact_messages")
+}
+
+model CreditPackage {
+  id          String   @id @default(cuid())
+  name        String
+  credits     Int
+  priceCents  Int
+  validityMonths Int   @default(12)
+  description String?
+  popular     Boolean  @default(false)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("credit_packages")
+}
+
+model CreditBalance {
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  total     Int      @default(0)
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("credit_balances")
+}
+
+model CreditBatch {
+  id                    String            @id @default(cuid())
+  companyId             String
+  amount                Int
+  remaining             Int
+  expiresAt             DateTime
+  status                CreditBatchStatus @default(ACTIVE)
+  stripePaymentIntentId String?           @unique
+  stripeCapturedAt      DateTime?
+  stripeCaptureError    String?
+  activatedAt           DateTime?
+  voidedAt              DateTime?
+  createdAt             DateTime          @default(now())
+  company               Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  movements             CreditMovement[]
+
+  @@index([companyId, status, remaining, expiresAt])
+  @@index([status, createdAt])
+  @@map("credit_batches")
+}
+
+model CreditMovement {
+  id            String             @id @default(cuid())
+  companyId     String
+  batchId       String?
+  type          CreditMovementType
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  reference     String?
+  note          String?
+  createdAt     DateTime           @default(now())
+  batch         CreditBatch?       @relation(fields: [batchId], references: [id])
+  company       Company            @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@map("credit_movements")
+}
+
+model Rescue {
+  id         String         @id @default(cuid())
+  companyId  String
+  requestId  String
+  reason     String
+  status     RescueStatus   @default(OPEN)
+  adminNote  String?
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  audit      RescueAudit[]
+  company    Company        @relation(fields: [companyId], references: [id])
+  request    ServiceRequest @relation(fields: [requestId], references: [id])
+
+  @@map("rescues")
+}
+
+model RescueAudit {
+  id        String   @id @default(cuid())
+  rescueId  String
+  action    String
+  actor     String
+  note      String?
+  createdAt DateTime @default(now())
+  rescue    Rescue   @relation(fields: [rescueId], references: [id], onDelete: Cascade)
+
+  @@map("rescue_audits")
+}
+
+model AssistanceMessage {
+  id         String            @id @default(cuid())
+  companyId  String
+  userId     String
+  senderType MessageSenderType
+  body       String
+  readAt     DateTime?
+  createdAt  DateTime          @default(now())
+  company    Company           @relation("CompanyMessages", fields: [companyId], references: [id], onDelete: Cascade)
+  user       User              @relation("UserMessages", fields: [userId], references: [id])
+
+  @@map("assistance_messages")
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  type      NotificationType
+  channel   NotificationChannel @default(IN_APP)
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  body        String
+  coverImage  String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  authorId    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("blog_posts")
+}
+
+enum ProductRole {
+  CLIENT
+  COMPANY
+}
+
+enum CompanyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CompanyWorkType {
+  SMALL
+  FULL
+  BOTH
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  EXPIRED
+}
+
+enum RequestWorkType {
+  SMALL
+  FULL
+  UNKNOWN
+}
+
+enum RescueStatus {
+  OPEN
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum CreditBatchStatus {
+  PENDING
+  ACTIVE
+  VOIDED
+}
+
+enum CreditMovementType {
+  PURCHASE
+  SPEND
+  REFUND
+  BONUS
+  EXPIRY
+}
+
+enum NotificationType {
+  NEW_REQUEST_IN_ZONE
+  CREDITS_LOW
+  CREDITS_EXPIRING
+  RESCUE_APPROVED
+  RESCUE_REJECTED
+  ADMIN_MESSAGE
+  CLIENT_MESSAGE
+  PROMO_REQUEST
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  PUSH
+  IN_APP
+}
+
+enum MessageSenderType {
+  CLIENT
+  COMPANY
+  ADMIN
+}
+
+enum RequestPurchaseMethod {
+  CREDITS
+  ONE_TIME
+}
+
+enum RequestSlotReservationStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+// ─── Vetrina Premium ─────────────────────────────────────────────────────────
+
+enum ShowcasePlanTier {
+  BASE
+  PLUS
+  PRO
+}
+
+enum ShowcaseStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum ContactSourceType {
+  MARKETPLACE_REQUEST
+  SHOWCASE_PROFILE
+  SHOWCASE_LISTING
+  SHOWCASE_HOME_BLOCK
+  SHOWCASE_CLIENT_DASHBOARD
+  SHOWCASE_CATEGORY_PAGE
+}
+
+model ShowcasePlan {
+  id                        String             @id @default(cuid())
+  tier                      ShowcasePlanTier   @unique
+  name                      String
+  description               String?
+  monthlyPriceCents         Int
+  yearlyPriceCents          Int?
+  discountPercent           Int                // 33 per BASE, 66 per PLUS
+  freeContactsPerMonth      Int                @default(0)   // per PRO
+  overQuotaDiscountPercent  Int                @default(0)   // 70 per PRO
+  active                    Boolean            @default(true)
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+  subscriptions             ShowcaseSubscription[]
+
+  @@map("showcase_plans")
+}
+
+model ShowcaseSubscription {
+  id                   String         @id @default(cuid())
+  companyId            String         @unique   // una sola sub attiva per company
+  planId               String
+  status               ShowcaseStatus @default(ACTIVE)
+  startsAt             DateTime       @default(now())
+  expiresAt            DateTime
+  stripePaymentIntentId String?        @unique   // idempotenza pagamenti one-time
+  createdAt             DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  company              Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  plan                 ShowcasePlan   @relation(fields: [planId], references: [id])
+
+  @@index([status, expiresAt])
+  @@map("showcase_subscriptions")
+}
+
+model StripeWebhookEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
+
+  @@map("stripe_webhook_events")
+}
+
+model RequestSlotReservation {
+  id        String                       @id
+  requestId String
+  companyId String
+  status    RequestSlotReservationStatus @default(ACTIVE)
+  expiresAt DateTime?
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
+
+  @@unique([companyId, requestId])
+  @@index([requestId, status])
+  @@index([status, expiresAt])
+  @@map("request_slot_reservations")
+}
+
+model Review {
+  id         String          @id @default(cuid())
+  companyId  String
+  purchaseId String          @unique   // 1 review per acquisto reale
+  rating     Int             // 1–5
+  body       String?
+  published  Boolean         @default(false)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchase   RequestPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@map("reviews")
+}
+
+model AdminAuditLog {
+  id               String             @id @default(cuid())
+  adminId          String
+  action           AdminAuditAction
+  targetId         String?
+  targetType       String?
+  meta             Json?
+  idempotencyKey   String?            @unique  // Prevent duplicate audit entries on retry
+  createdAt        DateTime           @default(now())
+
+  admin            User               @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([idempotencyKey])
+  @@map("admin_audit_logs")
+}

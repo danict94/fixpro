@@ -1,0 +1,37 @@
+{
+  "name": "@fixpro/api",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./trpc": "./src/trpc.ts",
+    "./credit-balance": "./src/lib/credit-balance.ts",
+    "./showcase-subscription": "./src/lib/showcase-subscription.ts",
+    "./root": "./src/root.ts",
+    "./root-web": "./src/root-web.ts",
+    "./root-admin": "./src/root-admin.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@fixpro/db": "workspace:*",
+    "@fixpro/shared": "workspace:*",
+    "@sentry/node": "^10.49.0",
+    "@trpc/server": "^11.1.0",
+    "@upstash/redis": "^1.37.0",
+    "better-auth": "^1.5.6",
+    "resend": "^4.0.0",
+    "superjson": "^2.2.2",
+    "twilio": "^5.13.1",
+    "uuid": "^13.0.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "*"
+  }
+}

@@ -1,0 +1,132 @@
+<svg width="360" height="260" viewBox="0 0 360 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="360" height="260" fill="none"/>
+
+  <!-- Ambient background -->
+  <path
+    d="M70.6 202.4C38.2 177.8 31.7 125.1 55.7 84.4C80.6 42.2 130.1 25.2 179.2 29.4C228.5 33.6 278.2 61.7 300.1 103.1C322.1 144.8 306.9 196 263.7 218.8C220.5 241.7 103.1 227.1 70.6 202.4Z"
+    fill="#F6F8FC"
+  />
+
+  <circle cx="292" cy="62" r="24" fill="#E7EEF9"/>
+  <circle cx="66" cy="198" r="18" fill="#EAF7F0"/>
+  <circle cx="304" cy="186" r="7" fill="#DBEAFE"/>
+  <circle cx="55" cy="70" r="6" fill="#BBF7D0"/>
+
+  <!-- Background comparison line -->
+  <path
+    d="M81 205C115 218 166 222 211 214C249 207 278 192 298 173"
+    stroke="#DDE7F3"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+
+  <!-- Left profile card -->
+  <g filter="url(#sideShadow)">
+    <rect x="38" y="88" width="98" height="112" rx="24" fill="#FFFFFF"/>
+    <rect x="38.5" y="88.5" width="97" height="111" rx="23.5" stroke="#E6ECF3"/>
+  </g>
+
+  <circle cx="87" cy="121" r="18" fill="#DBEAFE"/>
+  <path d="M77.5 124C81 118 93 118 96.5 124" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="87" cy="115" r="5.5" fill="#2563EB"/>
+
+  <rect x="62" y="151" width="50" height="6" rx="3" fill="#1E293B"/>
+  <rect x="67" y="165" width="40" height="5" rx="2.5" fill="#CBD5E1"/>
+  <rect x="59" y="181" width="56" height="9" rx="4.5" fill="#F1F5F9"/>
+
+  <!-- Right profile card -->
+  <g filter="url(#sideShadow)">
+    <rect x="224" y="88" width="98" height="112" rx="24" fill="#FFFFFF"/>
+    <rect x="224.5" y="88.5" width="97" height="111" rx="23.5" stroke="#E6ECF3"/>
+  </g>
+
+  <circle cx="273" cy="121" r="18" fill="#ECFDF5"/>
+  <path d="M263.5 124C267 118 279 118 282.5 124" stroke="#10B981" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="273" cy="115" r="5.5" fill="#10B981"/>
+
+  <rect x="248" y="151" width="50" height="6" rx="3" fill="#1E293B"/>
+  <rect x="253" y="165" width="40" height="5" rx="2.5" fill="#CBD5E1"/>
+  <rect x="245" y="181" width="56" height="9" rx="4.5" fill="#F1F5F9"/>
+
+  <!-- Selected central profile card -->
+  <g filter="url(#mainShadow)">
+    <rect x="116" y="52" width="128" height="166" rx="30" fill="#FFFFFF"/>
+    <rect x="117.5" y="53.5" width="125" height="163" rx="28.5" stroke="#2563EB" stroke-width="3"/>
+  </g>
+
+  <!-- Selection badge -->
+  <g filter="url(#badgeShadow)">
+    <circle cx="218" cy="68" r="18" fill="#2563EB"/>
+  </g>
+  <path
+    d="M210 68L216 74L226 62"
+    stroke="white"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Main avatar -->
+  <circle cx="180" cy="96" r="24" fill="#EEF6FF"/>
+  <circle cx="180" cy="88" r="7" fill="#2563EB"/>
+  <path
+    d="M167 103C171.8 95.8 188.2 95.8 193 103"
+    stroke="#2563EB"
+    stroke-width="3"
+    stroke-linecap="round"
+  />
+
+  <!-- Main card text -->
+  <rect x="146" y="130" width="68" height="8" rx="4" fill="#111827"/>
+  <rect x="154" y="146" width="52" height="5.5" rx="2.75" fill="#CBD5E1"/>
+
+  <!-- Score row -->
+  <rect x="140" y="165" width="80" height="28" rx="14" fill="#F8FAFC" stroke="#E5EAF0"/>
+  <path
+    d="M155 174.5L157.3 179.2L162.5 180L158.7 183.6L159.6 188.7L155 186.3L150.4 188.7L151.3 183.6L147.5 180L152.7 179.2L155 174.5Z"
+    fill="#F59E0B"
+  />
+  <rect x="171" y="176" width="34" height="5" rx="2.5" fill="#64748B"/>
+  <rect x="171" y="186" width="24" height="4.5" rx="2.25" fill="#CBD5E1"/>
+
+  <!-- Calm comparison chips -->
+  <g filter="url(#chipShadow)">
+    <rect x="82" y="35" width="88" height="38" rx="19" fill="#FFFFFF"/>
+  </g>
+  <circle cx="101" cy="54" r="7" fill="#10B981"/>
+  <path d="M98 54L101 57L106 50" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="116" y="49" width="34" height="5.5" rx="2.75" fill="#64748B"/>
+  <rect x="116" y="59" width="22" height="4.5" rx="2.25" fill="#CBD5E1"/>
+
+  <g filter="url(#chipShadow)">
+    <rect x="208" y="209" width="94" height="38" rx="19" fill="#FFFFFF"/>
+  </g>
+  <circle cx="227" cy="228" r="7" fill="#2563EB"/>
+  <path d="M224 228L227 231L232 224" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="242" y="223" width="38" height="5.5" rx="2.75" fill="#64748B"/>
+  <rect x="242" y="233" width="24" height="4.5" rx="2.25" fill="#CBD5E1"/>
+
+  <!-- Decorative strokes -->
+  <path d="M289 79C300 87 307 97 310 110" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+  <path d="M59 80C51 88 47 98 46 110" stroke="#86EFAC" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="252" cy="42" r="5" fill="#2563EB"/>
+  <circle cx="96" cy="218" r="4" fill="#10B981"/>
+
+  <defs>
+    <filter id="sideShadow" x="20" y="76" width="320" height="142" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.09"/>
+    </filter>
+
+    <filter id="mainShadow" x="90" y="34" width="180" height="218" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.15"/>
+    </filter>
+
+    <filter id="badgeShadow" x="188" y="42" width="60" height="60" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#2563EB" flood-opacity="0.28"/>
+    </filter>
+
+    <filter id="chipShadow" x="66" y="25" width="252" height="238" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.09"/>
+    </filter>
+  </defs>
+</svg>

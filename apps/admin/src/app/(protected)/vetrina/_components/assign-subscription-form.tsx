@@ -1,0 +1,190 @@
+'use client'
+
+import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
+import { Search, Crown, Zap, Sparkles, UserPlus } from 'lucide-react'
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@fixpro/ui'
+import { trpc } from '@/lib/trpc/client'
+
+type Tier = 'BASE' | 'PLUS' | 'PRO'
+
+const TIER_OPTIONS: { value: Tier; label: string; icon: typeof Sparkles }[] = [
+  { value: 'BASE', label: 'Vetrina Base',  icon: Sparkles },
+  { value: 'PLUS', label: 'Vetrina Plus',  icon: Zap },
+  { value: 'PRO',  label: 'Vetrina Pro',   icon: Crown },
+]
+
+export function AssignSubscriptionForm() {
+  const router = useRouter()
+
+  const [search, setSearch]             = useState('')
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; ragioneSociale: string; city: string | null } | null>(null)
+  const [tier, setTier]                 = useState<Tier>('BASE')
+  const [months, setMonths]             = useState('1')
+  const [error, setError]               = useState<string | null>(null)
+  const [success, setSuccess]           = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
+  const debounceRef                     = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Ricerca imprese (debounced via input)
+  const searchQuery = trpc.admin.companies.list.useQuery(
+    { search: search.trim(), status: 'APPROVED' },
+    { enabled: search.trim().length >= 2 }
+  )
+
+  function handleSearchInput(val: string) {
+    setSearch(val)
+    setSelectedCompany(null)
+    setShowDropdown(true)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {}, 300)
+  }
+
+  function selectCompany(c: { id: string; ragioneSociale: string; city: string | null }) {
+    setSelectedCompany(c)
+    setSearch(c.ragioneSociale)
+    setShowDropdown(false)
+  }
+
+  const assign = trpc.showcase.admin.assignSubscription.useMutation({
+    onSuccess: () => {
+      setError(null)
+      setSuccess(true)
+      setSearch('')
+      setSelectedCompany(null)
+      setTier('BASE')
+      setMonths('1')
+      setTimeout(() => setSuccess(false), 4000)
+      router.refresh()
+    },
+    onError: (err) => setError(err.message),
+  })
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedCompany) { setError('Seleziona un\'impresa'); return }
+    assign.mutate({
+      companyId: selectedCompany.id,
+      tier,
+      months:    parseInt(months) || 1,
+    })
+  }
+
+  const results = searchQuery.data?.slice(0, 8) ?? []
+
+  return (
+    <Card>
+      <CardHeader className="pb-3 border-b">
+        <div className="flex items-center gap-2">
+          <UserPlus className="h-4 w-4 stroke-primary" strokeWidth={1.9} />
+          <CardTitle className="text-sm font-medium text-foreground">
+            Assegna subscription vetrina
+          </CardTitle>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Assegna manualmente un piano vetrina a un&apos;impresa. Utile per trial, promozioni o attivazioni manuali.
+        </p>
+      </CardHeader>
+
+      <CardContent className="p-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* Ricerca impresa */}
+          <div className="space-y-1.5 relative">
+            <label className="text-xs font-medium text-foreground">Impresa</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 stroke-muted-foreground" strokeWidth={1.9} />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onFocus={() => search.length >= 2 && setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+                placeholder="Cerca per ragione sociale…"
+                autoComplete="off"
+                className="w-full pl-9 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+
+            {/* Dropdown risultati */}
+            {showDropdown && search.trim().length >= 2 && (
+              <div className="absolute z-10 w-full mt-1 rounded-xl border border-border bg-background shadow-lg overflow-hidden">
+                {searchQuery.isLoading ? (
+                  <div className="px-4 py-3 text-sm text-muted-foreground">Ricerca…</div>
+                ) : results.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-muted-foreground">Nessuna impresa trovata</div>
+                ) : (
+                  results.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onMouseDown={() => selectCompany({ id: c.id, ragioneSociale: c.ragioneSociale, city: c.city })}
+                      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{c.ragioneSociale}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {[c.city, c.province].filter(Boolean).join(', ')}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {selectedCompany && (
+            <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-sm text-success">
+              Selezionata: <span className="font-semibold">{selectedCompany.ragioneSociale}</span>
+            </div>
+          )}
+
+          {/* Tier */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Piano</label>
+            <div className="grid grid-cols-3 gap-2">
+              {TIER_OPTIONS.map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setTier(value)}
+                  className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                    tier === value
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border bg-background text-foreground hover:border-primary/50'
+                  }`}
+                >
+                  <Icon className={`h-3.5 w-3.5 ${tier === value ? 'stroke-primary' : 'stroke-muted-foreground'}`} strokeWidth={1.9} />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Durata */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Durata (mesi)</label>
+            <select
+              value={months}
+              onChange={(e) => setMonths(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {[1, 2, 3, 6, 12, 24].map((m) => (
+                <option key={m} value={m}>{m} {m === 1 ? 'mese' : 'mesi'}</option>
+              ))}
+            </select>
+          </div>
+
+          {error   && <p className="text-sm text-destructive">{error}</p>}
+          {success && <p className="text-sm text-success">Subscription assegnata con successo.</p>}
+
+          <Button type="submit" disabled={assign.isPending || !selectedCompany} className="gap-1.5 w-full sm:w-auto">
+            <UserPlus className="h-4 w-4" strokeWidth={1.9} />
+            {assign.isPending ? 'Assegnazione…' : 'Assegna subscription'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}

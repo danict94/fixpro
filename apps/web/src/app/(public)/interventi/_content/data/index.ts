@@ -1,0 +1,6 @@
+export { rifacimentoBagnoContent } from './rifacimento-bagno'
+export { ristrutturazioneAppartamentoContent } from './ristrutturazione-appartamento'
+export { perditaAcquaContent } from './perdita-acqua'
+export { tinteggiaturaCasaContent } from './tinteggiatura-casa'
+export { installazioneClimatizzatoreContent } from './installazione-climatizzatore'
+export { traslocoAppartamentoContent } from './trasloco-appartamento'

@@ -1,0 +1,86 @@
+<svg width="360" height="260" viewBox="0 0 360 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="360" height="260" fill="none"/>
+
+  <!-- Soft ambient background -->
+  <path
+    d="M71.8 202.2C39.5 178.1 31.5 124.9 55.5 83.9C80.4 41.4 129.6 24.9 178.9 29.5C228.2 34.1 278.7 61.8 300.2 103.2C321.8 144.8 306.7 195.6 263.9 218.6C221.1 241.6 104.2 226.3 71.8 202.2Z"
+    fill="#F6F8FC"
+  />
+
+  <circle cx="291" cy="62" r="24" fill="#E7EEF9"/>
+  <circle cx="65" cy="198" r="18" fill="#EAF7F0"/>
+
+  <!-- Back map layer -->
+  <g opacity="0.95" filter="url(#softShadow)">
+    <rect x="58" y="74" width="190" height="132" rx="24" fill="#FFFFFF"/>
+    <path d="M84 102C113 82 144 122 175 100C199 83 216 94 228 105" stroke="#D8E1EC" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M77 151C109 132 140 170 171 149C199 130 218 142 233 157" stroke="#D8E1EC" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M113 88L125 198" stroke="#EEF2F7" stroke-width="2"/>
+    <path d="M176 81L165 205" stroke="#EEF2F7" stroke-width="2"/>
+    <path d="M223 91L208 194" stroke="#EEF2F7" stroke-width="2"/>
+    <path d="M74 123H239" stroke="#EEF2F7" stroke-width="2"/>
+    <path d="M72 176H229" stroke="#EEF2F7" stroke-width="2"/>
+  </g>
+
+  <!-- Main request sheet -->
+  <g filter="url(#mainShadow)">
+    <rect x="112" y="42" width="174" height="180" rx="26" fill="#FFFFFF"/>
+    <rect x="112.5" y="42.5" width="173" height="179" rx="25.5" stroke="#E6ECF3"/>
+  </g>
+
+  <!-- Sheet header -->
+  <rect x="136" y="70" width="78" height="9" rx="4.5" fill="#111827"/>
+  <rect x="136" y="89" width="116" height="6.5" rx="3.25" fill="#CBD5E1"/>
+  <rect x="136" y="103" width="92" height="6.5" rx="3.25" fill="#E2E8F0"/>
+
+  <!-- Detail fields -->
+  <rect x="136" y="128" width="126" height="34" rx="12" fill="#F8FAFC" stroke="#E5EAF0"/>
+  <rect x="152" y="140" width="66" height="5.5" rx="2.75" fill="#94A3B8"/>
+  <rect x="152" y="151" width="42" height="5" rx="2.5" fill="#CBD5E1"/>
+  <circle cx="143" cy="145" r="3.5" fill="#2563EB"/>
+
+  <rect x="136" y="174" width="54" height="28" rx="10" fill="#EEF6FF"/>
+  <path d="M146 194L156 184L164 191L170 186L181 197" stroke="#2563EB" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="154" cy="185" r="3.5" fill="#60A5FA"/>
+
+  <rect x="202" y="174" width="60" height="28" rx="10" fill="#ECFDF5"/>
+  <path
+    d="M232 180C226.9 180 223.5 183.7 223.5 188.4C223.5 195.1 232 202 232 202C232 202 240.5 195.1 240.5 188.4C240.5 183.7 237.1 180 232 180Z"
+    fill="#10B981"
+  />
+  <circle cx="232" cy="188.5" r="2.8" fill="white"/>
+
+  <!-- Floating verified corner -->
+  <g filter="url(#badgeShadow)">
+    <rect x="238" y="28" width="72" height="44" rx="18" fill="#FFFFFF"/>
+    <rect x="253" y="43" width="24" height="14" rx="7" fill="#EAF2FF"/>
+    <path d="M260 50L264 54L271 46" stroke="#2563EB" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Front accent pencil line -->
+  <path d="M96 218C134 231 193 234 241 219" stroke="#DDE7F3" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Pin marker on map layer -->
+  <g filter="url(#pinShadow)">
+    <path
+      d="M88 119C79.7 119 74 125 74 132.7C74 143.3 88 155 88 155C88 155 102 143.3 102 132.7C102 125 96.3 119 88 119Z"
+      fill="#2563EB"
+    />
+    <circle cx="88" cy="132.5" r="4" fill="white"/>
+  </g>
+
+  <defs>
+    <filter id="softShadow" x="42" y="62" width="222" height="164" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <filter id="mainShadow" x="86" y="24" width="226" height="232" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.14"/>
+    </filter>
+    <filter id="badgeShadow" x="222" y="18" width="104" height="76" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+    <filter id="pinShadow" x="64" y="111" width="48" height="58" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#2563EB" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+</svg>
