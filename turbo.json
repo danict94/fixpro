@@ -2,14 +2,34 @@
   "$schema": "https://v2-9-6.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
-    "DATABASE_URL"
+    "DATABASE_URL",
+    "BETTER_AUTH_SECRET",
+    "BETTER_AUTH_URL",
+    "NEXT_PUBLIC_APP_URL",
+    "TWILIO_ACCOUNT_SID",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_PHONE_NUMBER",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "UPLOADTHING_TOKEN",
+    "RESEND_API_KEY"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": [
-        "DATABASE_URL"
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "NEXT_PUBLIC_APP_URL",
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_PHONE_NUMBER",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "UPLOADTHING_TOKEN",
+        "RESEND_API_KEY"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
@@ -28,22 +48,23 @@
     },
     "db:push": {
       "cache": false,
-      "inputs": ["prisma/schema.prisma"]
+      "inputs": ["prisma/schema.prisma"],
+      "env": ["DATABASE_URL"]
     },
     "db:generate": {
       "cache": false,
       "inputs": ["prisma/schema.prisma"],
-      "env": [
-        "DATABASE_URL"
-      ],
+      "env": ["DATABASE_URL"],
       "outputs": ["node_modules/.prisma/**"]
     },
     "db:studio": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["DATABASE_URL"]
     },
     "db:seed": {
-      "cache": false
+      "cache": false,
+      "env": ["DATABASE_URL"]
     }
   }
 }
