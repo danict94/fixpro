@@ -207,10 +207,12 @@ function mergeInterventiAndServizi({
   return rows
 }
 
-async function getGroupInterventi(group: MacroInterventoGroup) {
+async function getGroupInterventi(
+  group: MacroInterventoGroup,
+): Promise<InterventoForRow[]> {
   const slugs = getGroupDetailInterventoSlugs(group)
 
-  const interventi = await prisma.intervento.findMany({
+  const interventi: InterventoForRow[] = await prisma.intervento.findMany({
     where: { attivo: true },
     select: {
       nome: true,
@@ -219,26 +221,34 @@ async function getGroupInterventi(group: MacroInterventoGroup) {
     },
   })
 
-  const map = new Map(interventi.map(i => [i.slug, i]))
+  const map = new Map<string, InterventoForRow>(
+    interventi.map((i: InterventoForRow) => [i.slug, i]),
+  )
 
-  return slugs.flatMap(slug => {
-    const i = map.get(slug)
+  return slugs.flatMap((slug: string): InterventoForRow[] => {
+    const intervento = map.get(slug)
 
-    if (i) {
-      return [{
-        nome: i.nome,
-        slug: i.slug,
-        descrizione: i.descrizione,
-      }]
+    if (intervento) {
+      return [
+        {
+          nome: intervento.nome,
+          slug: intervento.slug,
+          descrizione: intervento.descrizione,
+        },
+      ]
     }
 
     const fallback = interventiBySlug[slug]
 
-    return fallback ? [{
-      nome: fallback.nome,
-      slug: fallback.slug,
-      descrizione: fallback.descrizione,
-    }] : []
+    return fallback
+      ? [
+          {
+            nome: fallback.nome,
+            slug: fallback.slug,
+            descrizione: fallback.descrizione,
+          },
+        ]
+      : []
   })
 }
   
