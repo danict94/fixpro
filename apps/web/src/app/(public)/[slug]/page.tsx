@@ -113,26 +113,36 @@ export default async function SlugPage({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {settore.categorie.map((cat) => (
-              <Link
-                key={cat.id}
-                href={`/${cat.slug}`}
-                className="group flex items-center justify-between rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md"
-              >
-                <div className="min-w-0">
-                  <p className="font-semibold text-foreground">{cat.nome}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {cat._count.companies} {cat._count.companies === 1 ? 'professionista' : 'professionisti'} disponibili
-                  </p>
-                </div>
-                <ArrowRight
-                  className="h-4 w-4 shrink-0 stroke-muted-foreground transition-colors group-hover:stroke-primary"
-                  strokeWidth={1.9}
-                />
-              </Link>
-            ))}
-          </div>
+  {settore.categorie.map((cat: {
+    id: string
+    slug: string
+    nome: string
+    _count: {
+      companies: number
+    }
+  }) => (
+    <Link
+      key={cat.id}
+      href={`/${cat.slug}`}
+      className="group flex items-center justify-between rounded-xl border border-border bg-card p-5 transition-shadow hover:shadow-md"
+    >
+      <div className="min-w-0">
+        <p className="font-semibold text-foreground">{cat.nome}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {cat._count.companies}{' '}
+          {cat._count.companies === 1
+            ? 'professionista'
+            : 'professionisti'} disponibili
+        </p>
+      </div>
 
+      <ArrowRight
+        className="h-4 w-4 shrink-0 stroke-muted-foreground transition-colors group-hover:stroke-primary"
+        strokeWidth={1.9}
+      />
+    </Link>
+  ))}
+</div>
           <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-8 text-center">
             <h2 className="text-xl font-bold text-secondary">Non trovi quello che cerchi?</h2>
             <p className="text-sm text-muted-foreground">
