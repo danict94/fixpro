@@ -6,13 +6,27 @@
     "BETTER_AUTH_SECRET",
     "BETTER_AUTH_URL",
     "NEXT_PUBLIC_APP_URL",
+
+    "ADMIN_EMAIL",
+    "EMAIL_FROM",
+
+    "STRIPE_SECRET_KEY",
+    "STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+
     "TWILIO_ACCOUNT_SID",
     "TWILIO_AUTH_TOKEN",
     "TWILIO_PHONE_NUMBER",
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
+    "TWILIO_VERIFY_SERVICE_SID",
+    "TWILIO_WHATSAPP_CONTENT_SID",
+
     "UPLOADTHING_TOKEN",
-    "RESEND_API_KEY"
+    "UPLOADTHING_SECRET",
+    "UPLOADTHING_APP_ID",
+
+    "RESEND_API_KEY",
+    "REDIS_URL",
+    "GOOGLE_MAPS_API_KEY"
   ],
   "tasks": {
     "build": {
@@ -23,13 +37,27 @@
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
         "NEXT_PUBLIC_APP_URL",
+
+        "ADMIN_EMAIL",
+        "EMAIL_FROM",
+
+        "STRIPE_SECRET_KEY",
+        "STRIPE_PUBLISHABLE_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+
         "TWILIO_ACCOUNT_SID",
         "TWILIO_AUTH_TOKEN",
         "TWILIO_PHONE_NUMBER",
-        "STRIPE_SECRET_KEY",
-        "STRIPE_WEBHOOK_SECRET",
+        "TWILIO_VERIFY_SERVICE_SID",
+        "TWILIO_WHATSAPP_CONTENT_SID",
+
         "UPLOADTHING_TOKEN",
-        "RESEND_API_KEY"
+        "UPLOADTHING_SECRET",
+        "UPLOADTHING_APP_ID",
+
+        "RESEND_API_KEY",
+        "REDIS_URL",
+        "GOOGLE_MAPS_API_KEY"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
