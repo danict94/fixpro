@@ -8,6 +8,9 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": [
+        "DATABASE_URL"
+      ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "dev": {
@@ -30,6 +33,9 @@
     "db:generate": {
       "cache": false,
       "inputs": ["prisma/schema.prisma"],
+      "env": [
+        "DATABASE_URL"
+      ],
       "outputs": ["node_modules/.prisma/**"]
     },
     "db:studio": {
