@@ -1,3 +1,4 @@
+export const revalidate = 3600
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -5,7 +6,6 @@ import { ArrowRight } from 'lucide-react'
 
 import { prisma } from '@fixpro/db'
 import { SectionShell } from '../../_components/home/section-shell'
-import { api } from '@/lib/trpc/server'
 import {
   getGroupDetailInterventoSlugs,
   interventiBySlug,
@@ -69,26 +69,6 @@ function normalizeLabel(value: string) {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
-}
-
-function getFallbackGroupInterventi(
-  group: MacroInterventoGroup,
-): InterventoForRow[] {
-  const slugs = getGroupDetailInterventoSlugs(group)
-
-  return slugs.flatMap((slug) => {
-    const fallback = interventiBySlug[slug]
-
-    return fallback
-      ? [
-          {
-            nome: fallback.nome,
-            slug: fallback.slug,
-            descrizione: fallback.descrizione,
-          },
-        ]
-      : []
-  })
 }
 
 async function getCategoriaPageData(
@@ -227,52 +207,41 @@ function mergeInterventiAndServizi({
   return rows
 }
 
-async function getGroupInterventi(
-  group: MacroInterventoGroup,
-): Promise<InterventoForRow[]> {
+async function getGroupInterventi(group: MacroInterventoGroup) {
   const slugs = getGroupDetailInterventoSlugs(group)
 
-  try {
-    const interventi = await api.taxonomy.getInterventi()
-    const interventiByDbSlug = new Map(
-      interventi.map((intervento) => [intervento.slug, intervento]),
-    )
+  const interventi = await prisma.intervento.findMany({
+    where: { attivo: true },
+    select: {
+      nome: true,
+      slug: true,
+      descrizione: true,
+    },
+  })
 
-    return slugs.flatMap((slug) => {
-      const intervento = interventiByDbSlug.get(slug)
+  const map = new Map(interventi.map(i => [i.slug, i]))
 
-      if (intervento) {
-        return [
-          {
-            nome: intervento.nome,
-            slug: intervento.slug,
-            descrizione: intervento.descrizione,
-          },
-        ]
-      }
+  return slugs.flatMap(slug => {
+    const i = map.get(slug)
 
-      const fallback = interventiBySlug[slug]
+    if (i) {
+      return [{
+        nome: i.nome,
+        slug: i.slug,
+        descrizione: i.descrizione,
+      }]
+    }
 
-      return fallback
-        ? [
-            {
-              nome: fallback.nome,
-              slug: fallback.slug,
-              descrizione: fallback.descrizione,
-            },
-          ]
-        : []
-    })
-  } catch (error) {
-    console.error(
-      'Errore caricamento interventi DB per gruppo categoria. Uso fallback statico.',
-      error,
-    )
+    const fallback = interventiBySlug[slug]
 
-    return getFallbackGroupInterventi(group)
-  }
+    return fallback ? [{
+      nome: fallback.nome,
+      slug: fallback.slug,
+      descrizione: fallback.descrizione,
+    }] : []
+  })
 }
-
+  
 export function generateStaticParams() {
   return macroInterventoGroups.map((group) => ({ slug: group.slug }))
 }

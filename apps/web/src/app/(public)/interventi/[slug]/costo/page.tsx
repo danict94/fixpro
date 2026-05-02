@@ -30,10 +30,21 @@ export async function generateMetadata({
 
   if (!intervento || !content) return {}
 
-  return {
-    title: `${intervento.nome}: prezzi e costi reali | FixPro`,
-    description: `Scopri prezzi, voci di costo e variabili reali per ${intervento.nome.toLowerCase()}.`,
-  }
+ return {
+  title: `Quanto costa ${intervento.nome.toLowerCase()}: prezzi aggiornati e fattori reali`,
+  description: `Scopri il costo di ${intervento.nome.toLowerCase()}: prezzi medi, voci di spesa, esempi reali e cosa fa davvero la differenza nel preventivo.`,
+  
+  alternates: {
+    canonical: `/interventi/${slug}/costo`,
+  },
+
+  openGraph: {
+    title: `Costo ${intervento.nome.toLowerCase()}: prezzi e stime reali`,
+    description: `Guida ai costi di ${intervento.nome.toLowerCase()} con esempi concreti e breakdown dettagliato.`,
+    url: `/interventi/${slug}/costo`,
+    type: 'article',
+  },
+}
 }
 
 export default async function InterventoCostoPage({

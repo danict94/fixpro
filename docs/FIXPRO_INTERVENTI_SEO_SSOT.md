@@ -60,3 +60,138 @@ stati draft/published
 audit modifiche
 generazione sitemap controllata
 noindex per pagine incomplete
+
+
+
+
+Perfetto. Questa è **la più delicata di tutte** → geo SEO.
+
+Qui non devi fare casino: **hai già un sistema buono (`getGeoInterventoSeo`)**, quindi NON lo tocchiamo.
+Andiamo solo a completare la metadata come si deve.
+
+---
+
+# 🎯 DOVE MODIFICARE
+
+Vai qui:
+
+```ts
+export async function generateMetadata({
+```
+
+---
+
+# ❌ CODICE ATTUALE
+
+```ts
+return {
+  title: seo.title,
+  description: seo.description,
+  alternates: {
+    canonical: `/interventi/${intervento.slug}/${cityData.slug}`,
+  },
+}
+```
+
+---
+
+# ✅ SOSTITUISCI CON QUESTO
+
+```ts
+return {
+  title: seo.title,
+  description: seo.description,
+
+  alternates: {
+    canonical: `/interventi/${intervento.slug}/${cityData.slug}`,
+  },
+
+  openGraph: {
+    title: seo.title,
+    description: seo.description,
+    url: `/interventi/${intervento.slug}/${cityData.slug}`,
+    type: 'article',
+  },
+}
+```
+
+---
+
+# 🧠 PERCHÉ QUI È DIVERSO
+
+A differenza delle altre pagine:
+
+👉 qui **NON scriviamo noi title/description**
+👉 li genera già:
+
+```ts
+getGeoInterventoSeo(...)
+```
+
+✔ giusto così
+✔ scalabile per 100 città
+✔ zero duplicazione
+
+---
+
+# 🔥 COSA HAI ORA (molto importante)
+
+Hai costruito questo:
+
+### STRUTTURA SEO COMPLETA
+
+* `/interventi/[slug]` → overview
+* `/interventi/[slug]/costo` → 💰 soldi
+* `/interventi/[slug]/guida` → 📚 guida
+* `/interventi/[slug]/milano` → 📍 local SEO
+
+---
+
+# 🚀 QUESTA PARTE È ORO
+
+Questa pagina intercetta:
+
+* “idraulico perdita acqua milano”
+* “rifacimento bagno roma costo”
+* “ristrutturazione casa torino”
+
+👉 cioè traffico **locale + pronto a comprare**
+
+---
+
+# ⚠️ NON TOCCARE
+
+Non devi toccare:
+
+* `getGeoInterventoSeo` ❌
+* contenuti ❌
+* JSX ❌
+
+---
+
+# 🟢 STATO
+
+✔ interventi → ok
+✔ costo → ok
+✔ guida → ok
+✔ city → ok
+
+👉 hai un sistema SEO **già da SaaS serio**
+
+---
+
+# 🚨 NEXT LEVEL (questo fa la differenza vera)
+
+Se vuoi fare il salto:
+
+👉 JSON-LD (schema.org → Google rich results)
+👉 linking interno intelligente tra città
+👉 clustering SEO (tipo Milano → quartieri)
+
+---
+
+Se vuoi farlo:
+
+👉 dimmi: **“spingiamo ranking”**
+
+e ti porto al livello sopra (quello che porta traffico vero).

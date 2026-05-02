@@ -28,10 +28,21 @@ export async function generateMetadata({
 
   if (!intervento || !content) return {}
 
-  return {
-    title: `${intervento.nome}: guida, fasi e tempi | FixPro`,
-    description: `Scopri fasi, errori comuni e come preparare bene la richiesta per ${intervento.nome.toLowerCase()}.`,
-  }
+ return {
+  title: `Guida ${intervento.nome.toLowerCase()}: fasi, tempi e cosa sapere prima`,
+  description: `Scopri come funziona ${intervento.nome.toLowerCase()}: fasi del lavoro, materiali, errori da evitare e come preparare una richiesta efficace.`,
+  
+  alternates: {
+    canonical: `/interventi/${slug}/guida`,
+  },
+
+  openGraph: {
+    title: `Guida ${intervento.nome.toLowerCase()}: come funziona davvero`,
+    description: `Tutte le fasi di ${intervento.nome.toLowerCase()} spiegate in modo semplice: cosa succede davvero e cosa devi sapere prima.`,
+    url: `/interventi/${slug}/guida`,
+    type: 'article',
+  },
+}
 }
 
 export default async function InterventoGuidaPage({

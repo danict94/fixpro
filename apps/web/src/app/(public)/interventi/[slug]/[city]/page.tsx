@@ -42,12 +42,20 @@ export async function generateMetadata({
   const seo = getGeoInterventoSeo({ intervento, content, city: cityData })
 
   return {
+  title: seo.title,
+  description: seo.description,
+
+  alternates: {
+    canonical: `/interventi/${intervento.slug}/${cityData.slug}`,
+  },
+
+  openGraph: {
     title: seo.title,
     description: seo.description,
-    alternates: {
-      canonical: `/interventi/${intervento.slug}/${cityData.slug}`,
-    },
-  }
+    url: `/interventi/${intervento.slug}/${cityData.slug}`,
+    type: 'article',
+  },
+}
 }
 
 export default async function InterventoCityPage({

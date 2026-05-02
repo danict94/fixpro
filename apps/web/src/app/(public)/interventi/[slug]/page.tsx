@@ -235,6 +235,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
+
   const intervento = getInterventoOrNull(slug)
   const content = getInterventoContentOrNull(slug)
 
@@ -242,9 +243,21 @@ export async function generateMetadata({
     return {}
   }
 
+  const title = `${intervento.nome}: costi, fasi e cosa sapere prima di iniziare`
+  const description = `Scopri quanto costa ${intervento.nome.toLowerCase()}, come funziona il lavoro e quali errori evitare. Guida completa con esempi reali e prezzi aggiornati.`
+
   return {
-    title: `${intervento.nome}: costi, fasi e cosa sapere prima di iniziare | FixPro`,
-    description: `Guida completa a ${intervento.nome.toLowerCase()}: costi realistici, fasi del lavoro, errori da evitare e risposte ai dubbi piu comuni.`,
+    title,
+    description,
+    alternates: {
+      canonical: `/interventi/${slug}`,
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/interventi/${slug}`,
+      type: 'article',
+    },
   }
 }
 
