@@ -5,6 +5,15 @@ import { MapPin, BadgeCheck, ArrowRight, Wrench } from 'lucide-react'
 import { api } from '@/lib/trpc/server'
 import { buttonVariants, Card, CardContent, Badge, cn } from '@fixpro/ui'
 
+type CategoriaMatch = {
+  categoria: {
+    id: string
+    slug: string
+    nome: string
+  }
+  isPrimary: boolean
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -47,6 +56,7 @@ function ImpresaCard({
   company,
 }: {
   company: {
+    id: string
     slug: string
     ragioneSociale: string
     description: string | null
@@ -66,15 +76,18 @@ function ImpresaCard({
               <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 stroke-success" strokeWidth={2} />
             )}
           </div>
+
           {company.description && (
             <p className="line-clamp-2 text-sm text-muted-foreground">{company.description}</p>
           )}
+
           {(company.city || company.province) && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <MapPin className="h-3.5 w-3.5 shrink-0" strokeWidth={1.9} />
               <span>{[company.city, company.province].filter(Boolean).join(', ')}</span>
             </div>
           )}
+
           <div className="flex flex-wrap gap-1.5">
             {company.categories.slice(0, 3).map((cc) => (
               <Badge key={cc.categoria.slug} variant="secondary" className="text-xs">
@@ -122,7 +135,8 @@ export default async function SlugPage({
                 <div className="min-w-0">
                   <p className="font-semibold text-foreground">{cat.nome}</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {cat._count.companies} {cat._count.companies === 1 ? 'professionista' : 'professionisti'} disponibili
+                    {cat._count.companies}{' '}
+                    {cat._count.companies === 1 ? 'professionista' : 'professionisti'} disponibili
                   </p>
                 </div>
                 <ArrowRight
@@ -154,14 +168,16 @@ export default async function SlugPage({
 
   if (result.type === 'intervento') {
     const { intervento } = result
-    const categorieCompatibili = intervento.matchingCategorie
+    const categorieCompatibili = intervento.matchingCategorie as CategoriaMatch[]
     const serviziRilevanti = intervento.matchingServizi
 
     return (
       <div className="page-section bg-background">
         <div className="page-container space-y-10">
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link href="/" className="hover:text-foreground">Home</Link>
+            <Link href="/" className="hover:text-foreground">
+              Home
+            </Link>
             <span>/</span>
             <span className="font-medium text-foreground">{intervento.nome}</span>
           </nav>
@@ -183,6 +199,7 @@ export default async function SlugPage({
               >
                 Richiedi preventivo
               </a>
+
               {categorieCompatibili[0] && (
                 <Link
                   href={`/${categorieCompatibili[0].categoria.slug}`}
@@ -200,9 +217,10 @@ export default async function SlugPage({
                 <h2 className="text-base font-semibold text-foreground">
                   Categorie professionali compatibili
                 </h2>
+
                 {categorieCompatibili.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {categorieCompatibili.map((match) => (
+                    {categorieCompatibili.map((match: CategoriaMatch) => (
                       <Link key={match.categoria.id} href={`/${match.categoria.slug}`}>
                         <Badge
                           variant={match.isPrimary ? 'default' : 'secondary'}
@@ -223,9 +241,8 @@ export default async function SlugPage({
 
             <Card>
               <CardContent className="space-y-4 p-6">
-                <h2 className="text-base font-semibold text-foreground">
-                  Servizi correlati
-                </h2>
+                <h2 className="text-base font-semibold text-foreground">Servizi correlati</h2>
+
                 {serviziRilevanti.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {serviziRilevanti.map((match) => (
@@ -259,7 +276,8 @@ export default async function SlugPage({
               Hai bisogno di {intervento.nome.toLowerCase()}?
             </h2>
             <p className="text-sm text-muted-foreground">
-              Invia una sola richiesta e lascia che FixPro individui le categorie professionali compatibili.
+              Invia una sola richiesta e lascia che FixPro individui le categorie professionali
+              compatibili.
             </p>
             <a
               href={`/richiesta?intervento=${intervento.slug}`}
@@ -286,7 +304,9 @@ export default async function SlugPage({
     <div className="page-section bg-background">
       <div className="page-container space-y-10">
         <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-foreground">Home</Link>
+          <Link href="/" className="hover:text-foreground">
+            Home
+          </Link>
           <span>/</span>
           <Link href={`/${categoria.settore.slug}`} className="hover:text-foreground">
             {categoria.settore.nome}
@@ -301,11 +321,18 @@ export default async function SlugPage({
               Trova {categoria.nome} nella tua zona
             </h1>
             <p className="body-lg mt-3 text-muted-foreground">
-              {categoria._count.companies} {categoria._count.companies === 1 ? 'professionista verificato' : 'professionisti verificati'} disponibili.
-              Richiesta gratuita, preventivi in 48 ore.
+              {categoria._count.companies}{' '}
+              {categoria._count.companies === 1
+                ? 'professionista verificato'
+                : 'professionisti verificati'}{' '}
+              disponibili. Richiesta gratuita, preventivi in 48 ore.
             </p>
           </div>
-          <a href={`/richiesta?categoria=${categoria.slug}`} className={cn(buttonVariants(), 'shrink-0')}>
+
+          <a
+            href={`/richiesta?categoria=${categoria.slug}`}
+            className={cn(buttonVariants(), 'shrink-0')}
+          >
             Richiedi preventivo
           </a>
         </div>
@@ -333,6 +360,7 @@ export default async function SlugPage({
             <h2 className="text-base font-semibold text-foreground">
               {categoria.nome} per provincia
             </h2>
+
             <div className="flex flex-wrap gap-2">
               {province.map((provinceItem) => (
                 <Link
@@ -354,7 +382,10 @@ export default async function SlugPage({
           <p className="text-sm text-muted-foreground">
             Invia la tua richiesta in 2 minuti. È gratuito per i clienti.
           </p>
-          <a href={`/richiesta?categoria=${categoria.slug}`} className={cn(buttonVariants({ size: 'lg' }))}>
+          <a
+            href={`/richiesta?categoria=${categoria.slug}`}
+            className={cn(buttonVariants({ size: 'lg' }))}
+          >
             Richiedi preventivo gratuito
             <ArrowRight className="ml-2 h-4 w-4" strokeWidth={2} />
           </a>
