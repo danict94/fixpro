@@ -5,6 +5,15 @@ import { MapPin, BadgeCheck, ArrowRight, Wrench } from 'lucide-react'
 import { api } from '@/lib/trpc/server'
 import { buttonVariants, Card, CardContent, Badge, cn } from '@fixpro/ui'
 
+type SettoreCategoria = {
+  id: string
+  slug: string
+  nome: string
+  _count: {
+    companies: number
+  }
+}
+
 type CategoriaMatch = {
   categoria: {
     id: string
@@ -12,6 +21,34 @@ type CategoriaMatch = {
     nome: string
   }
   isPrimary: boolean
+}
+
+type ServizioRilevanteMatch = {
+  servizio: {
+    id: string
+    nome: string
+  }
+}
+
+type ProvinceItem = {
+  province: string
+  city: string | null
+}
+
+type ImpresaCardCompany = {
+  id: string
+  slug: string
+  ragioneSociale: string
+  description: string | null
+  city: string | null
+  province: string | null
+  verified: boolean
+  categories: {
+    categoria: {
+      nome: string
+      slug: string
+    }
+  }[]
 }
 
 export async function generateMetadata({
@@ -52,20 +89,7 @@ export async function generateMetadata({
   return {}
 }
 
-function ImpresaCard({
-  company,
-}: {
-  company: {
-    id: string
-    slug: string
-    ragioneSociale: string
-    description: string | null
-    city: string | null
-    province: string | null
-    verified: boolean
-    categories: { categoria: { nome: string; slug: string } }[]
-  }
-}) {
+function ImpresaCard({ company }: { company: ImpresaCardCompany }) {
   return (
     <Link href={`/impresa/${company.slug}`} className="group block">
       <Card className="h-full transition-shadow group-hover:shadow-md">
@@ -112,6 +136,7 @@ export default async function SlugPage({
 
   if (result.type === 'settore') {
     const { settore } = result
+    const categorie = settore.categorie as SettoreCategoria[]
 
     return (
       <div className="page-section bg-background">
@@ -126,7 +151,7 @@ export default async function SlugPage({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {settore.categorie.map((cat) => (
+            {categorie.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/${cat.slug}`}
@@ -169,7 +194,7 @@ export default async function SlugPage({
   if (result.type === 'intervento') {
     const { intervento } = result
     const categorieCompatibili = intervento.matchingCategorie as CategoriaMatch[]
-    const serviziRilevanti = intervento.matchingServizi
+    const serviziRilevanti = intervento.matchingServizi as ServizioRilevanteMatch[]
 
     return (
       <div className="page-section bg-background">
@@ -220,7 +245,7 @@ export default async function SlugPage({
 
                 {categorieCompatibili.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {categorieCompatibili.map((match: CategoriaMatch) => (
+                    {categorieCompatibili.map((match) => (
                       <Link key={match.categoria.id} href={`/${match.categoria.slug}`}>
                         <Badge
                           variant={match.isPrimary ? 'default' : 'secondary'}
@@ -295,10 +320,13 @@ export default async function SlugPage({
   if (result.type !== 'categoria') notFound()
 
   const { categoria } = result
-  const [imprese, province] = await Promise.all([
+  const [impreseResult, provinceResult] = await Promise.all([
     api.taxonomy.getImpreseByCategoria({ categoriaId: categoria.id }),
     api.taxonomy.getProvinceByCategoria({ categoriaId: categoria.id }),
   ])
+
+  const imprese = impreseResult as ImpresaCardCompany[]
+  const province = provinceResult as ProvinceItem[]
 
   return (
     <div className="page-section bg-background">
@@ -317,9 +345,7 @@ export default async function SlugPage({
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-2xl">
-            <h1 className="section-title text-secondary">
-              Trova {categoria.nome} nella tua zona
-            </h1>
+            <h1 className="section-title text-secondary">Trova {categoria.nome} nella tua zona</h1>
             <p className="body-lg mt-3 text-muted-foreground">
               {categoria._count.companies}{' '}
               {categoria._count.companies === 1
@@ -376,9 +402,7 @@ export default async function SlugPage({
         )}
 
         <div className="space-y-4 rounded-2xl border border-primary/20 bg-primary/5 p-8 text-center">
-          <h2 className="text-xl font-bold text-secondary">
-            Hai bisogno di un {categoria.nome}?
-          </h2>
+          <h2 className="text-xl font-bold text-secondary">Hai bisogno di un {categoria.nome}?</h2>
           <p className="text-sm text-muted-foreground">
             Invia la tua richiesta in 2 minuti. È gratuito per i clienti.
           </p>
