@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server'
-import type { PrismaClient } from '@fixpro/db'
+import type { Prisma,PrismaClient } from '@fixpro/db'
 import { buildAndCreateRequest } from './request-create'
 import {
   normalizePhoneToE164,
@@ -113,7 +113,7 @@ export async function createRequestFromGuest({
       })
     }
 
-    const request = await db.$transaction((tx) =>
+    const request = await db.$transaction((tx: Prisma.TransactionClient) =>
       buildAndCreateRequest(tx, existingUser.id, {
         ...input,
         hasImages: false,
