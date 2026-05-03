@@ -59,6 +59,15 @@ type CreateRequestData = z.infer<typeof createInputBase> & {
   privacyConsentVersion?: string
 }
 
+type MatchingCategoriaResult = {
+  categoriaId: string
+}
+
+type ServizioResult = {
+  nome: string
+  categoriaId: string
+}
+
 export async function buildAndCreateRequest(
   tx: Prisma.TransactionClient,
   clientId: string,
@@ -68,16 +77,16 @@ export async function buildAndCreateRequest(
   const requestedCategoriaId = input.categoriaId?.trim() || null
 
   const servizio = input.servizioId
-    ? await tx.servizio.findUnique({
+    ? ((await tx.servizio.findUnique({
         where: { id: input.servizioId },
         select: { nome: true, categoriaId: true },
-      })
+      })) as ServizioResult | null)
     : null
 
   let resolvedCategoriaId = requestedCategoriaId
 
   if (requestedInterventoId) {
-    const matchingCategorie = await tx.matchingInterventoCat.findMany({
+    const matchingCategorie = (await tx.matchingInterventoCat.findMany({
       where: {
         interventoId: requestedInterventoId,
         attivo: true,
@@ -89,7 +98,7 @@ export async function buildAndCreateRequest(
       select: {
         categoriaId: true,
       },
-    })
+    })) as MatchingCategoriaResult[]
 
     if (matchingCategorie.length === 0) {
       throw new TRPCError({
@@ -100,10 +109,16 @@ export async function buildAndCreateRequest(
 
     const preferredCategoria =
       (requestedCategoriaId
-        ? matchingCategorie.find((matching) => matching.categoriaId === requestedCategoriaId)
+        ? matchingCategorie.find(
+            (matching: MatchingCategoriaResult) =>
+              matching.categoriaId === requestedCategoriaId,
+          )
         : null) ??
       (servizio
-        ? matchingCategorie.find((matching) => matching.categoriaId === servizio.categoriaId)
+        ? matchingCategorie.find(
+            (matching: MatchingCategoriaResult) =>
+              matching.categoriaId === servizio.categoriaId,
+          )
         : null) ??
       matchingCategorie[0]
 
