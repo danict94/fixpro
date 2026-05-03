@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import Link from 'next/link'
-import { Building2, Check, Home, Search, X } from 'lucide-react'
+import { Building2, Home } from 'lucide-react'
 import {
-  AddressAutocomplete,
   Button,
   Card,
   CardContent,
@@ -17,181 +16,11 @@ import {
 } from '@fixpro/ui'
 import { authClient } from '@/lib/auth-client'
 import { trpc } from '@/lib/trpc/client'
-
-type Role = 'CLIENT' | 'COMPANY'
-
-interface ServizioOption {
-  id: string
-  nome: string
-}
-
-interface CategoriaOption {
-  id: string
-  nome: string
-  slug: string
-  descrizione?: string | null
-  alias?: string[]
-  searchTerms?: string[]
-  servizi: ServizioOption[]
-}
-
-interface SettoreOption {
-  id: string
-  nome: string
-  slug?: string
-  categorie: CategoriaOption[]
-}
-
-type SelectedCategoria = CategoriaOption & {
-  settoreId: string
-  settoreNome: string
-}
-
-type ProfessionSuggestion = SelectedCategoria & {
-  score: number
-  reason: string
-  preview: string[]
-}
-
-export interface RegistrazioneWizardProps {
-  settori: SettoreOption[]
-}
-
-const STEPS = ['Dati', 'Verifica telefono', 'Email inviata']
-const OTP_COOLDOWN = 60
-const MAX_ONBOARDING_CATEGORIES = 2
-
-const POPULAR_CATEGORY_SLUGS = [
-  'impresa-edile',
-  'muratore',
-  'idraulico',
-  'elettricista',
-  'termoidraulico',
-  'imbianchino',
-  'fabbro',
-  'geometra',
-  'architetto',
-  'traslocatore',
-]
-
-const QUERY_SYNONYMS: Record<string, string[]> = {
-  bagno: ['bagno', 'sanitari', 'doccia', 'piastrelle bagno', 'ristrutturazione bagno'],
-  bagni: ['bagno', 'sanitari', 'doccia', 'piastrelle bagno', 'ristrutturazione bagno'],
-  caldaia: ['caldaia', 'termoidraulico', 'riscaldamento'],
-  caldaie: ['caldaia', 'termoidraulico', 'riscaldamento'],
-  condizionatore: ['climatizzatore', 'condizionatore', 'aria condizionata'],
-  clima: ['climatizzatore', 'condizionatore', 'aria condizionata'],
-  facciata: ['facciata', 'intonaci', 'cappotto', 'rasatura facciata'],
-  facciate: ['facciata', 'intonaci', 'cappotto', 'rasatura facciata'],
-  cappotto: ['cappotto termico', 'isolamento facciata', 'coibentazione'],
-  serratura: ['serratura', 'fabbro', 'porta'],
-  serrature: ['serratura', 'fabbro', 'porta'],
-  infissi: ['infissi', 'finestre', 'serramenti', 'vetro'],
-  serramenti: ['infissi', 'finestre', 'serramenti', 'vetro'],
-  trasloco: ['trasloco', 'traslocatore', 'sgombero'],
-  traslochi: ['trasloco', 'traslocatore', 'sgombero'],
-}
-
-function normalizePhone(raw: string): string {
-  const n = raw.replace(/[\s\-().]/g, '')
-  if (n.startsWith('+')) return n
-  if (n.startsWith('0039')) return '+39' + n.slice(4)
-  if (n.startsWith('39') && n.length >= 11) return '+' + n
-  return '+39' + n
-}
-
-function normalizeSearchText(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-}
-
-function unique<T>(values: T[]): T[] {
-  return Array.from(new Set(values))
-}
-
-function buildCategoriaIndex(settori: SettoreOption[]): SelectedCategoria[] {
-  return settori.flatMap((settore) =>
-    settore.categorie.map((categoria) => ({
-      ...categoria,
-      settoreId: settore.id,
-      settoreNome: settore.nome,
-    })),
-  )
-}
-
-function getSuggestionReason(categoria: SelectedCategoria): string {
-  if (categoria.alias?.length) return categoria.alias.slice(0, 3).join(', ')
-  if (categoria.searchTerms?.length) return categoria.searchTerms.slice(0, 3).join(', ')
-  if (categoria.descrizione) return categoria.descrizione
-  return categoria.servizi.slice(0, 3).map((servizio) => servizio.nome).join(', ')
-}
-
-function buildSuggestions({
-  query,
-  categories,
-  selectedIds,
-}: {
-  query: string
-  categories: SelectedCategoria[]
-  selectedIds: string[]
-}): ProfessionSuggestion[] {
-  const q = normalizeSearchText(query)
-
-  if (!q) {
-    return categories
-      .map((categoria) => ({
-        ...categoria,
-        score: POPULAR_CATEGORY_SLUGS.includes(categoria.slug)
-          ? 100 - POPULAR_CATEGORY_SLUGS.indexOf(categoria.slug)
-          : selectedIds.includes(categoria.id)
-            ? 80
-            : 0,
-        reason: getSuggestionReason(categoria),
-        preview: categoria.servizi.slice(0, 4).map((servizio) => servizio.nome),
-      }))
-      .filter((categoria) => categoria.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 8)
-  }
-
-  const terms = unique([q, ...(QUERY_SYNONYMS[q] ?? []).map(normalizeSearchText)])
-
-  return categories
-    .map((categoria) => {
-      const name = normalizeSearchText(categoria.nome)
-      const slug = normalizeSearchText(categoria.slug)
-      const settore = normalizeSearchText(categoria.settoreNome)
-      const aliases = (categoria.alias ?? []).map(normalizeSearchText)
-      const searchTerms = (categoria.searchTerms ?? []).map(normalizeSearchText)
-      const servizi = categoria.servizi.map((servizio) => normalizeSearchText(servizio.nome))
-
-      let score = 0
-
-      for (const term of terms) {
-        if (name === term || slug === term) score += 120
-        if (name.includes(term) || term.includes(name)) score += 90
-        if (aliases.some((alias) => alias === term || alias.includes(term) || term.includes(alias))) score += 80
-        if (searchTerms.some((searchTerm) => searchTerm.includes(term) || term.includes(searchTerm))) score += 70
-        if (servizi.some((servizio) => servizio.includes(term) || term.includes(servizio))) score += 58
-        if (settore.includes(term)) score += 25
-      }
-
-      if (selectedIds.includes(categoria.id)) score += 20
-
-      return {
-        ...categoria,
-        score,
-        reason: getSuggestionReason(categoria),
-        preview: categoria.servizi.slice(0, 4).map((servizio) => servizio.nome),
-      }
-    })
-    .filter((categoria) => categoria.score > 0)
-    .sort((a, b) => b.score - a.score || a.nome.localeCompare(b.nome))
-    .slice(0, 8)
-}
+import { buildCategoriaIndex } from './profession-suggestions'
+import { Step1Form } from './step-1-form'
+import { MAX_ONBOARDING_CATEGORIES, OTP_COOLDOWN, STEPS } from './wizard-constants'
+import type { RegistrazioneWizardProps, Role, SelectedCategoria } from './wizard-types'
+import { hasValidCoordinates, normalizePhone, normalizeProvince } from './wizard-utils'
 
 export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
   const [roleSelected, setRoleSelected] = useState(false)
@@ -230,16 +59,21 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
 
   useEffect(() => {
     if (cooldown <= 0) return
-    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000)
-    return () => clearTimeout(timer)
+
+    const timer = window.setTimeout(() => {
+      setCooldown((current) => current - 1)
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
   }, [cooldown])
 
   const allCategories = useMemo(() => buildCategoriaIndex(settori), [settori])
 
   const selectedCategories = useMemo(() => {
-    const map = new Map(allCategories.map((categoria) => [categoria.id, categoria]))
+    const categoriesById = new Map(allCategories.map((categoria) => [categoria.id, categoria]))
+
     return categoriaIds
-      .map((id) => map.get(id))
+      .map((id) => categoriesById.get(id))
       .filter((categoria): categoria is SelectedCategoria => Boolean(categoria))
   }, [allCategories, categoriaIds])
 
@@ -252,7 +86,9 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
     setStep1Error(null)
 
     setCategoriaIds((current) => {
-      if (current.includes(categoriaId)) return current.filter((id) => id !== categoriaId)
+      if (current.includes(categoriaId)) {
+        return current.filter((id) => id !== categoriaId)
+      }
 
       if (current.length >= MAX_ONBOARDING_CATEGORIES) {
         setStep1Error('Puoi selezionare al massimo 2 categorie in questa fase.')
@@ -263,8 +99,8 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
     })
   }
 
-  async function handleStep1Submit(e: FormEvent) {
-    e.preventDefault()
+  async function handleStep1Submit(event: FormEvent) {
+    event.preventDefault()
     setStep1Error(null)
 
     if (password !== confermaPassword) {
@@ -278,6 +114,7 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
     }
 
     const phoneE164 = normalizePhone(telefono)
+
     if (phoneE164.length < 8) {
       setStep1Error('Inserisci un numero di telefono valido.')
       return
@@ -304,8 +141,10 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
         return
       }
 
-      if (hasMapsAutocomplete && (lat === null || lng === null)) {
-        setStep1Error('Seleziona una località dai suggerimenti per attivare il matching geografico.')
+      if (hasMapsAutocomplete && !hasValidCoordinates(lat, lng)) {
+        setStep1Error(
+          'Seleziona una località dai suggerimenti per attivare il matching geografico.',
+        )
         return
       }
     }
@@ -339,12 +178,15 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
 
     if (signUpResult.error) {
       setStep1Loading(false)
-      const msg = signUpResult.error.message ?? ''
-      if (msg.toLowerCase().includes('email')) {
+
+      const message = signUpResult.error.message ?? ''
+
+      if (message.toLowerCase().includes('email')) {
         setStep1Error('Questa email è già registrata. Prova ad accedere.')
       } else {
         setStep1Error('Registrazione non riuscita. Controlla i dati e riprova.')
       }
+
       return
     }
 
@@ -383,12 +225,17 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
     }
 
     setStep1Loading(false)
+
     const otpSentOk = await sendOtp()
-    if (otpSentOk) setStep(1)
+
+    if (otpSentOk) {
+      setStep(1)
+    }
   }
 
   async function sendOtp(): Promise<boolean> {
     setOtpError(null)
+
     const phoneE164 = normalizePhone(telefono)
     const result = await authClient.phoneNumber.sendOtp({ phoneNumber: phoneE164 })
 
@@ -402,8 +249,8 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
     return true
   }
 
-  async function handleOtpVerify(e: FormEvent) {
-    e.preventDefault()
+  async function handleOtpVerify(event: FormEvent) {
+    event.preventDefault()
     setOtpError(null)
     setOtpLoading(true)
 
@@ -435,6 +282,7 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
             titleClassName="text-secondary"
             descriptionClassName="muted-copy text-sm"
           />
+
           <TypeCard
             icon={Building2}
             title="Sono un'professionista"
@@ -448,7 +296,7 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
 
         <p className="muted-copy text-center text-sm">
           Hai già un account?{' '}
-          <Link href="/accedi" className="font-semibold text-primary hover:underline">
+          <Link href="/accedi" className="text-primary font-semibold hover:underline">
             Accedi
           </Link>
         </p>
@@ -458,7 +306,7 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
 
   return (
     <Card className="surface-card overflow-hidden border-0 shadow-none">
-      <CardHeader className="space-y-5 px-6 pb-3 pt-6 sm:px-8">
+      <CardHeader className="space-y-5 px-6 pt-6 pb-3 sm:px-8">
         <button
           type="button"
           onClick={() => setRoleSelected(false)}
@@ -469,9 +317,10 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
         </button>
 
         <div className="space-y-2 text-center">
-          <CardTitle className="text-2xl font-semibold text-secondary sm:text-[30px]">
+          <CardTitle className="text-secondary text-2xl font-semibold sm:text-[30px]">
             {role === 'CLIENT' ? 'Registrati come cliente' : 'Registrati come impresa'}
           </CardTitle>
+
           <p className="muted-copy mx-auto max-w-[620px] text-sm leading-6">
             {role === 'CLIENT'
               ? "Completa i dati, verifica il telefono e attiva l'account."
@@ -484,7 +333,7 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 pb-6 pt-4 sm:px-8 sm:pb-8">
+      <CardContent className="px-6 pt-4 pb-6 sm:px-8 sm:pb-8">
         {step === 0 && (
           <Step1Form
             role={role}
@@ -514,10 +363,21 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
             onCity={setCity}
             onRadiusKm={setRadiusKm}
             onAddressSelect={(result) => {
-              setCity(result.city)
-              setProvince(result.province)
-              setLat(result.lat)
-              setLng(result.lng)
+              if (result.city) {
+                setCity(result.city)
+              }
+
+              if (result.province) {
+                setProvince(normalizeProvince(result.province))
+              }
+
+              if (hasValidCoordinates(result.lat, result.lng)) {
+                setLat(result.lat)
+                setLng(result.lng)
+              } else {
+                setLat(null)
+                setLng(null)
+              }
             }}
             error={step1Error}
             loading={step1Loading}
@@ -545,470 +405,14 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
             onResend={async () => {
               await authClient.sendVerificationEmail({
                 email,
-                callbackURL: role === 'COMPANY' ? '/area-impresa/dashboard' : '/area-cliente/richieste',
+                callbackURL:
+                  role === 'COMPANY' ? '/area-impresa/dashboard' : '/area-cliente/richieste',
               })
             }}
           />
         )}
       </CardContent>
     </Card>
-  )
-}
-
-interface Step1Props {
-  role: Role
-  allCategories: SelectedCategoria[]
-  selectedCategories: SelectedCategoria[]
-  categoriaIds: string[]
-  city: string
-  radiusKm: number
-  mapsApiKey: string
-  onToggleCategory: (categoriaId: string) => void
-  nome: string
-  onNome: (v: string) => void
-  cognome: string
-  onCognome: (v: string) => void
-  email: string
-  onEmail: (v: string) => void
-  telefono: string
-  onTelefono: (v: string) => void
-  password: string
-  onPassword: (v: string) => void
-  confermaPassword: string
-  onConfermaPassword: (v: string) => void
-  ragioneSociale: string
-  onRagioneSociale: (v: string) => void
-  partitaIva: string
-  onPartitaIva: (v: string) => void
-  onCity: (value: string) => void
-  onRadiusKm: (value: number) => void
-  onAddressSelect: (result: import('@fixpro/ui').AddressResult) => void
-  error: string | null
-  loading: boolean
-  onSubmit: (e: FormEvent) => void
-}
-
-function Step1Form({
-  role,
-  allCategories,
-  selectedCategories,
-  categoriaIds,
-  city,
-  radiusKm,
-  mapsApiKey,
-  onToggleCategory,
-  nome,
-  onNome,
-  cognome,
-  onCognome,
-  email,
-  onEmail,
-  telefono,
-  onTelefono,
-  password,
-  onPassword,
-  confermaPassword,
-  onConfermaPassword,
-  ragioneSociale,
-  onRagioneSociale,
-  partitaIva,
-  onPartitaIva,
-  onCity,
-  onRadiusKm,
-  onAddressSelect,
-  error,
-  loading,
-  onSubmit,
-}: Step1Props) {
-  const [professionQuery, setProfessionQuery] = useState('')
-  const [professionFocused, setProfessionFocused] = useState(false)
-
-  const showSuggestions = role === 'COMPANY' && (professionFocused || professionQuery.trim().length > 0)
-
-  const suggestions = useMemo(
-    () =>
-      buildSuggestions({
-        query: professionQuery,
-        categories: allCategories,
-        selectedIds: categoriaIds,
-      }),
-    [allCategories, categoriaIds, professionQuery],
-  )
-
-  const companyReady =
-    role !== 'COMPANY' ||
-    (ragioneSociale.trim().length > 1 &&
-      /^\d{11}$/.test(partitaIva) &&
-      categoriaIds.length > 0 &&
-      city.trim().length > 0)
-
-  function handleSuggestionClick(categoriaId: string) {
-    onToggleCategory(categoriaId)
-    if (categoriaIds.length + 1 >= MAX_ONBOARDING_CATEGORIES && !categoriaIds.includes(categoriaId)) {
-      setProfessionFocused(false)
-    }
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <section className="rounded-[24px] border border-border bg-card p-4 sm:p-5">
-        <SectionHeader
-          title="Account"
-          description="Dati essenziali per creare e verificare il profilo."
-          stepLabel="1"
-        />
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Nome" htmlFor="nome">
-            <Input
-              id="nome"
-              value={nome}
-              onChange={(e) => onNome(e.target.value)}
-              required
-              placeholder="Mario"
-              className="h-10 rounded-full"
-            />
-          </Field>
-
-          <Field label="Cognome" htmlFor="cognome">
-            <Input
-              id="cognome"
-              value={cognome}
-              onChange={(e) => onCognome(e.target.value)}
-              required
-              placeholder="Rossi"
-              className="h-10 rounded-full"
-            />
-          </Field>
-
-          <Field label="Email" htmlFor="email" className="sm:col-span-2">
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => onEmail(e.target.value)}
-              required
-              placeholder="mario@esempio.it"
-              autoComplete="email"
-              className="h-10 rounded-full"
-            />
-          </Field>
-
-          <Field label="Telefono" htmlFor="telefono" className="sm:col-span-2">
-            <Input
-              id="telefono"
-              type="tel"
-              value={telefono}
-              onChange={(e) => onTelefono(e.target.value)}
-              required
-              placeholder="333 1234567"
-              autoComplete="tel"
-              className="h-10 rounded-full"
-            />
-            <p className="muted-copy text-xs">
-              {telefono.replace(/[\s\-().]/g, '').length >= 4 ? (
-                <>
-                  Verrà usato:{' '}
-                  <span className="font-medium text-secondary">{normalizePhone(telefono)}</span>
-                </>
-              ) : (
-                'Puoi inserire il numero con o senza prefisso.'
-              )}
-            </p>
-          </Field>
-        </div>
-      </section>
-
-      {role === 'COMPANY' && (
-        <section className="rounded-[24px] border border-border bg-card p-4 sm:p-5">
-          <SectionHeader
-            title="Impresa"
-            description="Dati minimi per creare il profilo e ricevere richieste nella zona corretta."
-            stepLabel="2"
-          />
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Ragione sociale" htmlFor="ragioneSociale">
-              <Input
-                id="ragioneSociale"
-                value={ragioneSociale}
-                onChange={(e) => onRagioneSociale(e.target.value)}
-                required
-                placeholder="Rossi Impianti S.r.l."
-                className="h-10 rounded-full"
-              />
-            </Field>
-
-            <Field label="Partita IVA" htmlFor="partitaIva">
-              <Input
-                id="partitaIva"
-                value={partitaIva}
-                onChange={(e) => onPartitaIva(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                required
-                placeholder="12345678901"
-                maxLength={11}
-                inputMode="numeric"
-                className="h-10 rounded-full"
-              />
-            </Field>
-
-            <Field label="Zona di lavoro" className="sm:col-span-2">
-              {mapsApiKey ? (
-                <AddressAutocomplete
-                  id="work-area"
-                  apiKey={mapsApiKey}
-                  placeholder="Cerca città o indirizzo operativo"
-                  onAddressChange={onAddressSelect}
-                />
-              ) : (
-                <Input
-                  value={city}
-                  onChange={(e) => onCity(e.target.value)}
-                  placeholder="Inserisci la tua città operativa"
-                  className="h-10 rounded-full"
-                />
-              )}
-              <p className="muted-copy text-xs">
-                {city ? `Riceverai richieste a partire da ${city}.` : 'Scegli la località operativa.'}
-              </p>
-            </Field>
-
-            <div className="space-y-2 sm:col-span-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-secondary">Raggio di copertura</label>
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                  {radiusKm} km
-                </span>
-              </div>
-              <input
-                type="range"
-                min={5}
-                max={200}
-                step={5}
-                value={radiusKm}
-                onChange={(e) => onRadiusKm(Number(e.target.value))}
-                className="w-full accent-primary"
-              />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {role === 'COMPANY' && (
-        <section className="rounded-[24px] border border-border bg-card p-4 sm:p-5">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h3 className="text-base font-semibold text-secondary">Di cosa ti occupi?</h3>
-              <p className="muted-copy mt-1 text-sm">
-                Scrivi un mestiere o i lavori che fai. I servizi specifici li completi dopo il primo accesso.
-              </p>
-            </div>
-            <span className="w-fit rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              {categoriaIds.length}/{MAX_ONBOARDING_CATEGORIES} categorie
-            </span>
-          </div>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={professionQuery}
-              onFocus={() => setProfessionFocused(true)}
-              onBlur={() => {
-                window.setTimeout(() => setProfessionFocused(false), 140)
-              }}
-              onChange={(e) => setProfessionQuery(e.target.value)}
-              placeholder="Es. muratore, caldaie, bagni, infissi, traslochi..."
-              className="h-11 rounded-full pl-10 pr-10"
-              role="combobox"
-              aria-expanded={showSuggestions}
-              aria-controls="profession-suggestions"
-              aria-autocomplete="list"
-            />
-            {professionQuery && (
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setProfessionQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-secondary"
-                aria-label="Pulisci ricerca"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-
-            {showSuggestions && (
-              <div
-                id="profession-suggestions"
-                role="listbox"
-                className="absolute left-0 right-0 top-full z-30 mt-2 max-h-[360px] overflow-y-auto rounded-[20px] border border-border bg-background p-2 shadow-xl"
-              >
-                <p className="px-2 pb-2 pt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {professionQuery.trim() ? 'Suggerimenti' : 'Professioni più cercate'}
-                </p>
-
-                {suggestions.length > 0 ? (
-                  <div className="space-y-1.5">
-                    {suggestions.map((categoria) => {
-                      const selected = categoriaIds.includes(categoria.id)
-                      const disabled = !selected && categoriaIds.length >= MAX_ONBOARDING_CATEGORIES
-
-                      return (
-                        <button
-                          key={categoria.id}
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          disabled={disabled}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleSuggestionClick(categoria.id)}
-                          className={cn(
-                            'flex w-full items-start gap-3 rounded-[16px] px-3 py-3 text-left transition-colors',
-                            selected ? 'bg-primary/10' : 'hover:bg-primary/5',
-                            disabled && 'cursor-not-allowed opacity-50 hover:bg-transparent',
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border',
-                              selected
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'border-muted-foreground/30 bg-card',
-                            )}
-                          >
-                            {selected && <Check className="h-3.5 w-3.5" />}
-                          </span>
-
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="font-medium text-secondary">{categoria.nome}</span>
-                              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                                {categoria.settoreNome}
-                              </span>
-                            </span>
-                            <span className="mt-1 block line-clamp-1 text-xs text-muted-foreground">
-                              {categoria.reason}
-                            </span>
-                            {categoria.preview.length > 0 && (
-                              <span className="mt-2 flex flex-wrap gap-1.5">
-                                {categoria.preview.slice(0, 3).map((servizio) => (
-                                  <span
-                                    key={servizio}
-                                    className="rounded-full bg-muted/70 px-2 py-0.5 text-[11px] text-muted-foreground"
-                                  >
-                                    {servizio}
-                                  </span>
-                                ))}
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-[16px] border border-dashed p-4 text-center text-sm text-muted-foreground">
-                    Nessun suggerimento trovato. Prova con un mestiere o un lavoro diverso.
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {selectedCategories.length > 0 && (
-            <div className="mt-4 rounded-[18px] bg-muted/60 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Categorie scelte
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {selectedCategories.map((categoria) => (
-                  <button
-                    key={categoria.id}
-                    type="button"
-                    onClick={() => onToggleCategory(categoria.id)}
-                    className="inline-flex items-center gap-1 rounded-full bg-background px-3 py-1 text-xs font-medium text-secondary ring-1 ring-border hover:bg-muted"
-                  >
-                    {categoria.nome}
-                    <X className="h-3 w-3" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      <section className="rounded-[24px] border border-border bg-card p-4 sm:p-5">
-        <SectionHeader
-          title="Sicurezza"
-          description="Crea una password sicura per completare la registrazione."
-          stepLabel={role === 'COMPANY' ? '3' : '2'}
-        />
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Password" htmlFor="password">
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => onPassword(e.target.value)}
-              required
-              placeholder="Minimo 8 caratteri"
-              autoComplete="new-password"
-              className="h-10 rounded-full"
-            />
-          </Field>
-
-          <Field label="Conferma password" htmlFor="confermaPassword">
-            <Input
-              id="confermaPassword"
-              type="password"
-              value={confermaPassword}
-              onChange={(e) => onConfermaPassword(e.target.value)}
-              required
-              placeholder="Ripeti la password"
-              autoComplete="new-password"
-              className="h-10 rounded-full"
-            />
-          </Field>
-        </div>
-      </section>
-
-      {error && (
-        <div className="rounded-[18px] border border-danger/20 bg-danger/10 px-4 py-3">
-          <p className="text-sm font-medium text-danger" role="alert">
-            {error}
-          </p>
-        </div>
-      )}
-
-      <div className="sticky bottom-4 z-10 rounded-[24px] border border-border bg-background/95 p-3 shadow-lg backdrop-blur">
-        <Button type="submit" className="primary-pill w-full px-5 py-3" disabled={loading || !companyReady}>
-          {loading ? 'Registrazione in corso...' : 'Continua'}
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-function SectionHeader({
-  title,
-  description,
-  stepLabel,
-}: {
-  title: string
-  description: string
-  stepLabel: string
-}) {
-  return (
-    <div className="mb-4 flex items-start justify-between gap-3">
-      <div>
-        <h3 className="text-base font-semibold text-secondary">{title}</h3>
-        <p className="muted-copy mt-1 text-sm">{description}</p>
-      </div>
-      <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-        {stepLabel}
-      </span>
-    </div>
   )
 }
 
@@ -1025,7 +429,7 @@ function Field({
 }) {
   return (
     <div className={cn('space-y-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-sm font-medium text-secondary">
+      <label htmlFor={htmlFor} className="text-secondary text-sm font-medium">
         {label}
       </label>
       {children}
@@ -1042,7 +446,7 @@ interface Step2Props {
   cooldown: number
   otpSent: boolean
   onSendOtp: () => Promise<boolean>
-  onSubmit: (e: FormEvent) => void
+  onSubmit: (event: FormEvent) => void
 }
 
 function Step2Otp({
@@ -1059,11 +463,15 @@ function Step2Otp({
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="feature-panel px-6 py-8 text-center sm:px-8">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
+        <p className="text-primary text-[12px] font-semibold tracking-[0.12em] uppercase">
           Verifica telefono
         </p>
-        <p className="muted-copy mt-3 text-sm leading-6">Abbiamo inviato un codice di verifica al numero</p>
-        <p className="mt-1 text-base font-semibold text-secondary">{telefono}</p>
+
+        <p className="muted-copy mt-3 text-sm leading-6">
+          Abbiamo inviato un codice di verifica al numero
+        </p>
+
+        <p className="text-secondary mt-1 text-base font-semibold">{telefono}</p>
       </div>
 
       <div className="surface-card px-5 py-6 sm:px-6">
@@ -1071,7 +479,7 @@ function Step2Otp({
           <Input
             id="otp"
             value={otp}
-            onChange={(e) => onOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onChange={(event) => onOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
             required
             placeholder="123456"
             inputMode="numeric"
@@ -1082,14 +490,18 @@ function Step2Otp({
         </Field>
 
         {error && (
-          <div className="mt-4 rounded-[18px] border border-danger/20 bg-danger/10 px-4 py-3">
-            <p className="text-sm font-medium text-danger" role="alert">
+          <div className="border-danger/20 bg-danger/10 mt-4 rounded-[18px] border px-4 py-3">
+            <p className="text-danger text-sm font-medium" role="alert">
               {error}
             </p>
           </div>
         )}
 
-        <Button type="submit" className="primary-pill mt-5 w-full px-5 py-3" disabled={loading || otp.length < 6}>
+        <Button
+          type="submit"
+          className="primary-pill mt-5 w-full px-5 py-3"
+          disabled={loading || otp.length < 6}
+        >
           {loading ? 'Verifica in corso...' : 'Verifica codice'}
         </Button>
 
@@ -1098,7 +510,7 @@ function Step2Otp({
             type="button"
             onClick={onSendOtp}
             disabled={cooldown > 0}
-            className="text-sm font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+            className="text-primary disabled:text-muted-foreground text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:no-underline"
           >
             {cooldown > 0
               ? `Reinvia codice (${cooldown}s)`
@@ -1128,10 +540,10 @@ function Step3EmailSent({ email, onResend }: Step3Props) {
   return (
     <div className="space-y-5 py-2 text-center">
       <div className="feature-panel px-6 py-10 sm:px-8">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-border/60">
+        <div className="ring-border/60 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-7 w-7 text-primary"
+            className="text-primary h-7 w-7"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -1145,9 +557,13 @@ function Step3EmailSent({ email, onResend }: Step3Props) {
             />
           </svg>
         </div>
-        <h2 className="mt-4 text-lg font-semibold text-secondary">Controlla la tua email</h2>
+
+        <h2 className="text-secondary mt-4 text-lg font-semibold">Controlla la tua email</h2>
+
         <p className="muted-copy mt-2 text-sm">Abbiamo inviato un link di attivazione a</p>
-        <p className="mt-1 font-medium text-secondary">{email}</p>
+
+        <p className="text-secondary mt-1 font-medium">{email}</p>
+
         <p className="muted-copy mt-2 text-sm leading-6">
           Clicca il link nell&apos;email per attivare il tuo account.
         </p>
@@ -1163,7 +579,7 @@ function Step3EmailSent({ email, onResend }: Step3Props) {
             type="button"
             onClick={handleResend}
             disabled={resent}
-            className="w-full text-sm font-semibold text-primary hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+            className="text-primary disabled:text-muted-foreground w-full text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:no-underline"
           >
             {resent ? 'Email reinviata' : "Non hai ricevuto l'email? Reinvia"}
           </button>

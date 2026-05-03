@@ -2,12 +2,7 @@ import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import type { Prisma } from '@fixpro/db'
 import { slugify } from '@fixpro/shared'
-import {
-  createTRPCRouter,
-  companyProcedure,
-  protectedProcedure,
-  publicProcedure,
-} from '../trpc'
+import { createTRPCRouter, companyProcedure, protectedProcedure, publicProcedure } from '../trpc'
 
 const PARTITA_IVA_IN_USE_MESSAGE = 'Questa partita IVA è già associata a un profilo impresa.'
 
@@ -173,10 +168,7 @@ export const companyRouter = createTRPCRouter({
         select: { userId: true },
       })
 
-      if (
-        companyWithSamePartitaIva &&
-        companyWithSamePartitaIva.userId !== ctx.session.user.id
-      ) {
+      if (companyWithSamePartitaIva && companyWithSamePartitaIva.userId !== ctx.session.user.id) {
         throw new TRPCError({
           code: 'CONFLICT',
           message: PARTITA_IVA_IN_USE_MESSAGE,
@@ -206,14 +198,10 @@ export const companyRouter = createTRPCRouter({
 
           if (existing) {
             const existingCategoryIds = new Set(
-              existing.categories.map(
-                (category: { categoriaId: string }) => category.categoriaId,
-              ),
+              existing.categories.map((category: { categoriaId: string }) => category.categoriaId),
             )
             const existingServiceIds = new Set(
-              existing.services.map(
-                (service: { servizioId: string }) => service.servizioId,
-              ),
+              existing.services.map((service: { servizioId: string }) => service.servizioId),
             )
 
             const missingCategoryIds = categoriaIds.filter(
@@ -377,11 +365,11 @@ export const companyRouter = createTRPCRouter({
           .string()
           .max(2)
           .optional()
-          .transform((v) => v?.toUpperCase()),
+          .transform((value) => value?.toUpperCase()),
         cap: z.string().max(10).optional(),
-        lat: z.number().optional(),
-        lng: z.number().optional(),
-        googlePlaceId: z.string().optional(),
+        lat: z.number().nullable().optional(),
+        lng: z.number().nullable().optional(),
+        googlePlaceId: z.string().nullable().optional(),
         radiusKm: z.number().int().min(5).max(200).optional(),
         workType: z.enum(['SMALL', 'FULL', 'BOTH']).optional(),
         notificationEmail: z.boolean().optional(),
@@ -396,14 +384,16 @@ export const companyRouter = createTRPCRouter({
           ...(input.phone !== undefined && { phone: input.phone }),
           ...(input.website !== undefined && { website: input.website || null }),
           ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl || null }),
-          ...(input.address !== undefined && { address: input.address }),
-          ...(input.streetNumber !== undefined && { streetNumber: input.streetNumber }),
-          ...(input.city !== undefined && { city: input.city }),
-          ...(input.province !== undefined && { province: input.province?.toUpperCase() }),
-          ...(input.cap !== undefined && { cap: input.cap }),
+          ...(input.address !== undefined && { address: input.address || null }),
+          ...(input.streetNumber !== undefined && { streetNumber: input.streetNumber || null }),
+          ...(input.city !== undefined && { city: input.city || null }),
+          ...(input.province !== undefined && { province: input.province || null }),
+          ...(input.cap !== undefined && { cap: input.cap || null }),
           ...(input.lat !== undefined && { lat: input.lat }),
           ...(input.lng !== undefined && { lng: input.lng }),
-          ...(input.googlePlaceId !== undefined && { googlePlaceId: input.googlePlaceId }),
+          ...(input.googlePlaceId !== undefined && {
+            googlePlaceId: input.googlePlaceId || null,
+          }),
           ...(input.radiusKm !== undefined && { radiusKm: input.radiusKm }),
           ...(input.workType !== undefined && { workType: input.workType }),
           ...(input.notificationEmail !== undefined && {
@@ -487,9 +477,7 @@ export const companyRouter = createTRPCRouter({
       const existingCategoryIds = new Set(
         company.categories.map((category) => category.categoriaId),
       )
-      const existingServiceIds = new Set(
-        company.services.map((service) => service.servizioId),
-      )
+      const existingServiceIds = new Set(company.services.map((service) => service.servizioId))
 
       const categoriaIdsToAdd = categoriaIds.filter(
         (categoriaId) => !existingCategoryIds.has(categoriaId),

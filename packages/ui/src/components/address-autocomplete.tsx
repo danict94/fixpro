@@ -10,25 +10,25 @@ export interface AddressResult {
   /** Indirizzo completo formattato, es. "Via Roma, 1, 20121 Milano MI, Italia" */
   formattedAddress: string
   /** Solo la via, es. "Via Roma" */
-  street:           string
+  street: string
   /** Numero civico, es. "1" */
-  streetNumber:     string
+  streetNumber: string
   /** Comune, es. "Milano" */
-  city:             string
-  /** CAP, es. "20121" */
-  postalCode:       string
+  city: string
+  /** CAP, es. "20121". Può essere vuoto: Google Places non lo garantisce. */
+  postalCode: string
   /** Sigla provincia (2 lettere), es. "MI" */
-  province:         string
+  province: string
   /** Regione, es. "Lombardia" */
-  region:           string
+  region: string
   /** Nazione (codice ISO 2), es. "IT" */
-  country:          string
-  /** Latitudine (null se non disponibile) */
-  lat:              number | null
-  /** Longitudine (null se non disponibile) */
-  lng:              number | null
+  country: string
+  /** Latitudine (null se non disponibile o non valida) */
+  lat: number | null
+  /** Longitudine (null se non disponibile o non valida) */
+  lng: number | null
   /** Google place_id per deduplicazione / arricchimento futuro */
-  googlePlaceId:    string
+  googlePlaceId: string
 }
 
 // ─── Props componente ─────────────────────────────────────────────────────────
@@ -37,8 +37,8 @@ export interface AddressAutocompleteProps {
   apiKey: string
   /**
    * Chiamata quando l'utente seleziona un indirizzo dai suggerimenti Google Places.
-   * Tutti i campi dell'oggetto sono presenti (possono essere stringa vuota se
-   * Google non li restituisce per quell'indirizzo specifico).
+   * Tutti i campi dell'oggetto sono presenti. Le stringhe possono essere vuote se
+   * Google non restituisce quel dato per il luogo selezionato.
    */
   onAddressChange: (result: AddressResult) => void
   placeholder?: string
@@ -46,6 +46,117 @@ export interface AddressAutocompleteProps {
   className?: string
   required?: boolean
   id?: string
+}
+
+// ─── Helper Google Places ─────────────────────────────────────────────────────
+
+function findComponent(
+  components: google.maps.GeocoderAddressComponent[],
+  type: string,
+): google.maps.GeocoderAddressComponent | undefined {
+  return components.find((component) => component.types.includes(type))
+}
+
+function getLongName(
+  components: google.maps.GeocoderAddressComponent[],
+  type: string,
+): string {
+  return findComponent(components, type)?.long_name.trim() ?? ''
+}
+
+function getShortName(
+  components: google.maps.GeocoderAddressComponent[],
+  type: string,
+): string {
+  return findComponent(components, type)?.short_name.trim() ?? ''
+}
+
+function normalizeProvince(value: string): string {
+  const normalized = value.trim().toUpperCase()
+
+  if (!normalized) {
+    return ''
+  }
+
+  return normalized.slice(0, 2)
+}
+
+function normalizeCountry(value: string): string {
+  return value.trim().toUpperCase()
+}
+
+function resolveCity(components: google.maps.GeocoderAddressComponent[]): string {
+  const cityCandidateTypes = [
+    'locality',
+    'postal_town',
+    'administrative_area_level_3',
+    'administrative_area_level_4',
+    'administrative_area_level_2',
+  ]
+
+  for (const type of cityCandidateTypes) {
+    const value = getLongName(components, type)
+
+    if (value) {
+      return value
+    }
+  }
+
+  return ''
+}
+
+function resolveProvince(components: google.maps.GeocoderAddressComponent[]): string {
+  const province = getShortName(components, 'administrative_area_level_2')
+
+  if (province) {
+    return normalizeProvince(province)
+  }
+
+  /**
+   * Fallback molto prudente:
+   * administrative_area_level_1 in Italia è spesso la regione, non la provincia.
+   * Lo usiamo solo se Google restituisce già una sigla breve di 2 lettere.
+   * Non vogliamo inventare province sbagliate tipo "SI" da "Sicilia".
+   */
+  const regionShortName = getShortName(components, 'administrative_area_level_1')
+    .trim()
+    .toUpperCase()
+
+  if (/^[A-Z]{2}$/.test(regionShortName)) {
+    return regionShortName
+  }
+
+  return ''
+}
+
+function resolveCoordinates(place: google.maps.places.PlaceResult): {
+  lat: number | null
+  lng: number | null
+} {
+  const lat = place.geometry?.location?.lat()
+  const lng = place.geometry?.location?.lng()
+
+  const hasValidCoordinates =
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+
+  if (!hasValidCoordinates) {
+    return {
+      lat: null,
+      lng: null,
+    }
+  }
+
+  return {
+    lat,
+    lng,
+  }
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -59,18 +170,26 @@ export function AddressAutocomplete({
   required,
   id,
 }: AddressAutocompleteProps) {
-  const inputRef       = React.useRef<HTMLInputElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
   const autocompleteRef = React.useRef<google.maps.places.Autocomplete | null>(null)
+  const onAddressChangeRef = React.useRef(onAddressChange)
+
+  React.useEffect(() => {
+    onAddressChangeRef.current = onAddressChange
+  }, [onAddressChange])
 
   React.useEffect(() => {
     if (!apiKey || !inputRef.current) return
 
+    let cancelled = false
+
     async function initAutocomplete() {
       setOptions({ key: apiKey, v: 'weekly' })
 
-      const { Autocomplete } = await importLibrary('places') as google.maps.PlacesLibrary
+      const placesLibrary = (await importLibrary('places')) as google.maps.PlacesLibrary
+      const { Autocomplete } = placesLibrary
 
-      if (!inputRef.current) return
+      if (!inputRef.current || cancelled) return
 
       autocompleteRef.current = new Autocomplete(inputRef.current, {
         componentRestrictions: { country: 'it' },
@@ -79,55 +198,23 @@ export function AddressAutocomplete({
       })
 
       autocompleteRef.current.addListener('place_changed', () => {
-        const place = autocompleteRef.current!.getPlace()
-        if (!place.address_components) return
+        const place = autocompleteRef.current?.getPlace()
+        const components = place?.address_components
 
-        let streetNumber   = ''
-        let route          = ''
-        let city           = ''
-        let province       = ''
-        let postalCode     = ''
-        let region         = ''
-        let country        = ''
-
-        for (const component of place.address_components) {
-          const types = component.types
-          if (types.includes('street_number')) {
-            streetNumber = component.long_name
-          } else if (types.includes('route')) {
-            route = component.long_name
-          } else if (types.includes('locality')) {
-            city = component.long_name
-          } else if (types.includes('administrative_area_level_2')) {
-            // short_name restituisce la sigla (es. "MI", "RM")
-            province = component.short_name.slice(0, 2).toUpperCase()
-          } else if (types.includes('postal_code')) {
-            postalCode = component.long_name
-          } else if (types.includes('administrative_area_level_1')) {
-            region = component.long_name
-          } else if (types.includes('country')) {
-            country = component.short_name.toUpperCase()
-          }
+        if (!place || !components?.length) {
+          return
         }
 
-        // Fallback: piccoli comuni italiani possono comparire come
-        // administrative_area_level_3 invece di locality
-        if (!city) {
-          for (const comp of place.address_components!) {
-            if (comp.types.includes('administrative_area_level_3')) {
-              city = comp.long_name
-              break
-            }
-          }
-        }
+        const streetNumber = getLongName(components, 'street_number')
+        const street = getLongName(components, 'route')
+        const city = resolveCity(components)
+        const province = resolveProvince(components)
+        const postalCode = getLongName(components, 'postal_code')
+        const region = getLongName(components, 'administrative_area_level_1')
+        const country = normalizeCountry(getShortName(components, 'country'))
+        const coordinates = resolveCoordinates(place)
 
-        // street = solo la via, senza civico
-        const street = route
-
-        const lat = place.geometry?.location?.lat() ?? null
-        const lng = place.geometry?.location?.lng() ?? null
-
-        onAddressChange({
+        onAddressChangeRef.current({
           formattedAddress: place.formatted_address ?? '',
           street,
           streetNumber,
@@ -136,8 +223,8 @@ export function AddressAutocomplete({
           province,
           region,
           country,
-          lat,
-          lng,
+          lat: coordinates.lat,
+          lng: coordinates.lng,
           googlePlaceId: place.place_id ?? '',
         })
       })
@@ -146,11 +233,14 @@ export function AddressAutocomplete({
     initAutocomplete().catch(console.error)
 
     return () => {
+      cancelled = true
+
       if (autocompleteRef.current) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current)
+        autocompleteRef.current = null
       }
     }
-  }, [apiKey, onAddressChange])
+  }, [apiKey])
 
   return (
     <input

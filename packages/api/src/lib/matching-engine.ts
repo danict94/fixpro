@@ -15,6 +15,11 @@ type MatchingDb = {
   }
 }
 
+type CoordinatePair = {
+  lat: number
+  lng: number
+}
+
 export interface MatchingCompanyProfile {
   id: string
   lat: number | null
@@ -52,18 +57,84 @@ export interface MatchingEvaluation {
   matchesCompanyPreferences: boolean
 }
 
-export function normalizeText(value: string | null | undefined) {
+export function normalizeText(value: string | null | undefined): string {
   return value?.trim().toLowerCase() ?? ''
 }
 
-export function cityOrProvinceMatches(left: string | null | undefined, right: string | null | undefined) {
+export function normalizeProvinceCode(value: string | null | undefined): string {
+  const normalized = value?.trim().toUpperCase() ?? ''
+
+  if (/^[A-Z]{2}$/.test(normalized)) {
+    return normalized
+  }
+
+  return ''
+}
+
+export function geoTextMatches(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
   const leftValue = normalizeText(left)
   const rightValue = normalizeText(right)
-  if (!leftValue || !rightValue) return false
+
+  if (!leftValue || !rightValue) {
+    return false
+  }
+
   return leftValue === rightValue
 }
 
-export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+export function provinceMatches(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  const leftCode = normalizeProvinceCode(left)
+  const rightCode = normalizeProvinceCode(right)
+
+  if (leftCode && rightCode) {
+    return leftCode === rightCode
+  }
+
+  return geoTextMatches(left, right)
+}
+
+/**
+ * Compatibilità con eventuali import/test esistenti.
+ * Il matching geografico attuale usa la provincia come fallback testuale.
+ */
+export function cityOrProvinceMatches(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): boolean {
+  return provinceMatches(left, right)
+}
+
+export function getValidCoordinatePair(
+  lat: number | null,
+  lng: number | null,
+): CoordinatePair | null {
+  const valid =
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+
+  if (!valid) {
+    return null
+  }
+
+  return {
+    lat,
+    lng,
+  }
+}
+
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (value: number) => (value * Math.PI) / 180
   const earthRadiusKm = 6371
   const dLat = toRad(lat2 - lat1)
@@ -78,7 +149,7 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
 export async function loadInterventoCategoryMap(
   db: MatchingDb | typeof prisma,
   interventoIds: string[],
-) {
+): Promise<Map<string, Set<string>>> {
   const uniqueIds = Array.from(new Set(interventoIds.filter(Boolean)))
   const map = new Map<string, Set<string>>()
 
@@ -116,16 +187,21 @@ export function evaluateRequestCompanyMatch(args: {
   const isTargeted = request.targetCompanyId === company.id
 
   let geoMatched = isTargeted
+
   if (!geoMatched) {
-    if (
-      request.lat !== null &&
-      request.lng !== null &&
-      company.lat !== null &&
-      company.lng !== null
-    ) {
-      geoMatched = haversineKm(request.lat, request.lng, company.lat, company.lng) <= company.radiusKm
+    const requestCoordinates = getValidCoordinatePair(request.lat, request.lng)
+    const companyCoordinates = getValidCoordinatePair(company.lat, company.lng)
+
+    if (requestCoordinates && companyCoordinates) {
+      geoMatched =
+        haversineKm(
+          requestCoordinates.lat,
+          requestCoordinates.lng,
+          companyCoordinates.lat,
+          companyCoordinates.lng,
+        ) <= company.radiusKm
     } else {
-      geoMatched = cityOrProvinceMatches(request.province, company.province)
+      geoMatched = provinceMatches(request.province, company.province)
     }
   }
 
@@ -176,7 +252,7 @@ export function evaluateRequestCompanyMatch(args: {
   }
 }
 
-function tierWeight(tier: MatchingEvaluation['matchingTier']) {
+function tierWeight(tier: MatchingEvaluation['matchingTier']): number {
   switch (tier) {
     case 'targeted':
       return 4
@@ -193,7 +269,7 @@ function tierWeight(tier: MatchingEvaluation['matchingTier']) {
 
 export function sortMatches<T extends { evaluation: MatchingEvaluation; createdAt?: Date | null }>(
   items: T[],
-) {
+): T[] {
   return [...items].sort((left, right) => {
     const leftTier = tierWeight(left.evaluation.matchingTier)
     const rightTier = tierWeight(right.evaluation.matchingTier)
@@ -208,6 +284,7 @@ export function sortMatches<T extends { evaluation: MatchingEvaluation; createdA
 
     const leftCreatedAt = left.createdAt?.getTime() ?? 0
     const rightCreatedAt = right.createdAt?.getTime() ?? 0
+
     return rightCreatedAt - leftCreatedAt
   })
 }
@@ -216,7 +293,7 @@ export function selectMatchingCompaniesForRequest<T extends MatchingCompanyProfi
   companies: T[]
   request: MatchingRequestProfile
   interventoCategoryMap: ReadonlyMap<string, ReadonlySet<string>>
-}) {
+}): Array<{ company: T; evaluation: MatchingEvaluation }> {
   const evaluated = args.companies.map((company) => ({
     company,
     evaluation: evaluateRequestCompanyMatch({
