@@ -12,6 +12,34 @@ const STATUS_CONFIG = {
   SUSPENDED: { label: 'Sospesa', variant: 'secondary' },
 } as const
 
+type CompanyStatus = keyof typeof STATUS_CONFIG
+
+type AdminCompanyListItem = {
+  id: string
+  ragioneSociale: string
+  status: CompanyStatus
+  city: string | null
+  province: string | null
+  createdAt: Date | string
+  verified: boolean
+  creditBalance: {
+    total: number
+  } | null
+  user: {
+    emailVerified: boolean
+    phoneNumberVerified: boolean
+  }
+  categories: Array<{
+    categoria: {
+      nome: string
+    }
+  }>
+  _count: {
+    purchases: number
+    rescues: number
+  }
+}
+
 const STATUS_TABS = [
   { label: 'Tutte', value: undefined },
   { label: 'In attesa', value: 'PENDING' },
@@ -42,19 +70,19 @@ export default async function ImpresePage({ searchParams }: Props) {
   const validStatus = ['PENDING', 'APPROVED', 'REJECTED', 'SUSPENDED'].includes(
     params.status ?? '',
   )
-    ? (params.status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED')
+    ? (params.status as CompanyStatus)
     : undefined
 
   const validCredits = ['zero', 'low', 'ok'].includes(params.creditsLevel ?? '')
     ? (params.creditsLevel as 'zero' | 'low' | 'ok')
     : undefined
 
-  const imprese = await api.admin.companies.list({
+  const imprese = (await api.admin.companies.list({
     status: validStatus,
     search: params.search || undefined,
     province: params.province || undefined,
     creditsLevel: validCredits,
-  })
+  })) as AdminCompanyListItem[]
 
   function buildHref(overrides: Record<string, string | undefined>) {
     const merged = {
@@ -210,7 +238,7 @@ export default async function ImpresePage({ searchParams }: Props) {
         </Card>
       ) : (
         <section className="space-y-3">
-          {imprese.map((c) => {
+          {imprese.map((c: AdminCompanyListItem) => {
             const cfg = STATUS_CONFIG[c.status]
             const crediti = c.creditBalance?.total ?? 0
             const categorie = c.categories.map((cc) => cc.categoria.nome).join(', ')
@@ -231,11 +259,7 @@ export default async function ImpresePage({ searchParams }: Props) {
                           <span className="text-sm font-semibold text-secondary">
                             {c.ragioneSociale}
                           </span>
-                          <Badge
-                            variant={
-                              cfg.variant as 'secondary' | 'success' | 'warning' | 'destructive'
-                            }
-                          >
+                          <Badge variant={cfg.variant}>
                             {cfg.label}
                           </Badge>
 
@@ -297,6 +321,7 @@ export default async function ImpresePage({ searchParams }: Props) {
                             )}
                             <span>email</span>
                           </span>
+
                           <span
                             title={
                               c.user.phoneNumberVerified
@@ -317,6 +342,7 @@ export default async function ImpresePage({ searchParams }: Props) {
                             )}
                             <span>tel</span>
                           </span>
+
                           <span
                             title={c.verified ? 'Impresa verificata' : 'Impresa non verificata'}
                             className={`inline-flex items-center gap-0.5 text-xs ${
