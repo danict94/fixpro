@@ -60,3 +60,6 @@ web-build/
 
 # uploadthing
 .uploadthing
+
+.vercel
+.env*.local
