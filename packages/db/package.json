@@ -16,7 +16,6 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@fixpro/shared": "workspace:*",
     "@prisma/client": "^6.6.0"
   },
   "devDependencies": {

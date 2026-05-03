@@ -1,0 +1,13 @@
+{
+  "ignore": [
+    "apps/web/src/instrumentation.server.ts",
+    "packages/api/src/tests/concurrent-race-tests.ts",
+    "packages/db/prisma/backfill-company-portfolio.ts",
+    "packages/db/prisma/seed.ts",
+    "packages/db/prisma/seed1.ts",
+    "packages/db/prisma/seed-data/**"
+  ],
+  "ignoreBinaries": [
+    "dotenv"
+  ]
+}

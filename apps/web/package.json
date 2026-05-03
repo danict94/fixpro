@@ -26,6 +26,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "resend": "^6.10.0",
+    "server-only": "^0.0.1",
     "stripe": "^17.7.0",
     "superjson": "^2.2.2",
     "twilio": "^5.13.1",
