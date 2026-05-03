@@ -5,12 +5,19 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { nextCookies } from 'better-auth/next-js'
 import { prisma } from '@fixpro/db'
 import { buildAdminEmail, sendAdminEmail, type AdminEmailVariant } from '@fixpro/api'
+import { getAdminAppUrl } from './app-url'
 
 const _authSecret = process.env.BETTER_AUTH_SECRET
-if (!_authSecret) throw new Error('[auth] BETTER_AUTH_SECRET is missing. Set it in your environment variables.')
-if (_authSecret.length < 32) throw new Error('[auth] BETTER_AUTH_SECRET must be at least 32 characters long.')
 
-const adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_URL ?? 'http://localhost:3001'
+if (!_authSecret) {
+  throw new Error('[auth] BETTER_AUTH_SECRET is missing. Set it in your environment variables.')
+}
+
+if (_authSecret.length < 32) {
+  throw new Error('[auth] BETTER_AUTH_SECRET must be at least 32 characters long.')
+}
+
+const adminBaseURL = getAdminAppUrl()
 const adminEmailVariantStore = new AsyncLocalStorage<AdminEmailVariant>()
 
 const ADMIN_EMAIL_SUBJECT: Record<AdminEmailVariant, string> = {
@@ -46,6 +53,7 @@ export const auth = betterAuth({
   },
   secret: _authSecret,
   baseURL: adminBaseURL,
+  trustedOrigins: [adminBaseURL],
 })
 
 export async function requestAdminPasswordReset(

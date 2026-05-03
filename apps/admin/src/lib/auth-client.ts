@@ -3,8 +3,9 @@
 import { createAuthClient } from 'better-auth/react'
 import { inferAdditionalFields } from 'better-auth/client/plugins'
 import type { auth } from './auth'
+import { getAdminAppUrl } from './app-url'
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_ADMIN_URL ?? 'http://localhost:3001',
+  baseURL: getAdminAppUrl(),
   plugins: [inferAdditionalFields<typeof auth>()],
 })
