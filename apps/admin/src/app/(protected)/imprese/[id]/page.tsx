@@ -1,32 +1,85 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, CheckCircle, XCircle, Monitor } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Monitor, XCircle } from 'lucide-react'
 import { api } from '@/lib/trpc/server'
 import { Badge, Card, CardContent } from '@fixpro/ui'
 import { ImpresaActions } from './_components/impresa-actions'
 
 const STATUS_CONFIG = {
-  PENDING:   { label: 'In attesa',  variant: 'warning' },
-  APPROVED:  { label: 'Approvata',  variant: 'success' },
-  REJECTED:  { label: 'Rifiutata',  variant: 'destructive' },
-  SUSPENDED: { label: 'Sospesa',    variant: 'secondary' },
+  PENDING: { label: 'In attesa', variant: 'warning' },
+  APPROVED: { label: 'Approvata', variant: 'success' },
+  REJECTED: { label: 'Rifiutata', variant: 'destructive' },
+  SUSPENDED: { label: 'Sospesa', variant: 'secondary' },
 } as const
+
+type CompanyStatus = keyof typeof STATUS_CONFIG
 
 const MOVEMENT_TYPE: Record<string, string> = {
   PURCHASE: 'Acquisto pacchetto',
-  SPEND:    'Spesa lead',
-  REFUND:   'Rimborso rescue',
-  BONUS:    'Bonus admin',
-  EXPIRY:   'Scadenza batch',
+  SPEND: 'Spesa lead',
+  REFUND: 'Rimborso rescue',
+  BONUS: 'Bonus admin',
+  EXPIRY: 'Scadenza batch',
+}
+
+type CompanyCategory = {
+  categoria: {
+    nome: string
+    settore: {
+      nome: string
+    }
+  }
+}
+
+type CompanySession = {
+  id: string
+  userAgent: string | null
+  ipAddress: string | null
+  createdAt: Date | string
+  expiresAt: Date | string
+}
+
+type CompanyCreditMovement = {
+  id: string
+  type: string
+  note: string | null
+  amount: number
+  balanceAfter: number
+}
+
+type CompanyCreditBatch = {
+  id: string
+  amount: number
+  remaining: number
+  expiresAt: Date | string
+}
+
+type CompanyPurchase = {
+  id: string
+  creditSpent: number
+  purchasedAt: Date | string
+  request: {
+    id: string
+    title: string
+    city: string | null
+  }
+}
+
+type CompanyRescue = {
+  id: string
+  status: string
+  reason: string
+  createdAt: Date | string
 }
 
 function VerifyBadge({ ok, label }: { ok: boolean; label: string }) {
   return (
     <div className={`flex items-center gap-1.5 text-sm ${ok ? 'text-success' : 'text-muted-foreground'}`}>
-      {ok
-        ? <CheckCircle className="h-4 w-4 stroke-success" strokeWidth={2} />
-        : <XCircle     className="h-4 w-4 stroke-muted-foreground" strokeWidth={2} />
-      }
+      {ok ? (
+        <CheckCircle className="h-4 w-4 stroke-success" strokeWidth={2} />
+      ) : (
+        <XCircle className="h-4 w-4 stroke-muted-foreground" strokeWidth={2} />
+      )}
       <span>{label}</span>
     </div>
   )
@@ -39,30 +92,41 @@ interface Props {
 export default async function ImpresaDetailPage({ params }: Props) {
   const { id } = await params
 
-  let company
+  let company: Awaited<ReturnType<typeof api.admin.companies.get>>
+
   try {
     company = await api.admin.companies.get({ id })
   } catch {
     notFound()
   }
 
-  const cfg = STATUS_CONFIG[company.status]
+  const companyStatus = company.status as CompanyStatus
+  const cfg = STATUS_CONFIG[companyStatus]
+
+  const categories = company.categories as CompanyCategory[]
+  const sessions = company.user.sessions as CompanySession[]
+  const creditMovements = company.creditMovements as CompanyCreditMovement[]
+  const creditBatches = company.creditBatches as CompanyCreditBatch[]
+  const purchases = company.purchases as CompanyPurchase[]
+  const rescues = company.rescues as CompanyRescue[]
+
   const crediti = company.creditBalance?.total ?? 0
-  const openRescues = company.rescues.filter((r) => r.status === 'OPEN' || r.status === 'UNDER_REVIEW').length
+  const openRescues = rescues.filter(
+    (r) => r.status === 'OPEN' || r.status === 'UNDER_REVIEW',
+  ).length
 
   return (
     <div className="space-y-6">
-
       <Link
         href="/imprese"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4 stroke-current" strokeWidth={1.8} />
         Tutte le imprese
       </Link>
 
-      <div className="flex items-start gap-3 flex-wrap">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold text-foreground">{company.ragioneSociale}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {company.city ?? '—'}
@@ -71,7 +135,8 @@ export default async function ImpresaDetailPage({ params }: Props) {
             {company.user.email}
           </p>
         </div>
-        <Badge variant={cfg.variant as 'secondary' | 'success' | 'warning' | 'destructive'}>
+
+        <Badge variant={cfg.variant}>
           {cfg.label}
         </Badge>
       </div>
@@ -85,14 +150,13 @@ export default async function ImpresaDetailPage({ params }: Props) {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-
         {/* Colonna principale */}
-        <div className="lg:col-span-2 space-y-4">
-
+        <div className="space-y-4 lg:col-span-2">
           {/* Dati aziendali */}
           <Card>
             <CardContent className="p-6">
-              <p className="font-semibold text-foreground mb-4">Dati aziendali</p>
+              <p className="mb-4 font-semibold text-foreground">Dati aziendali</p>
+
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 {company.partitaIva && (
                   <>
@@ -100,24 +164,28 @@ export default async function ImpresaDetailPage({ params }: Props) {
                     <dd className="text-foreground">{company.partitaIva}</dd>
                   </>
                 )}
+
                 {company.phone && (
                   <>
                     <dt className="text-muted-foreground">Telefono</dt>
                     <dd className="text-foreground">{company.phone}</dd>
                   </>
                 )}
+
                 {company.user.phoneNumber && (
                   <>
                     <dt className="text-muted-foreground">Tel. utente</dt>
                     <dd className="text-foreground">{company.user.phoneNumber}</dd>
                   </>
                 )}
+
                 {company.website && (
                   <>
                     <dt className="text-muted-foreground">Sito web</dt>
                     <dd className="text-foreground">{company.website}</dd>
                   </>
                 )}
+
                 {(company.city || company.province || company.cap) && (
                   <>
                     <dt className="text-muted-foreground">Città</dt>
@@ -128,26 +196,33 @@ export default async function ImpresaDetailPage({ params }: Props) {
                     </dd>
                   </>
                 )}
+
                 {company.address && (
                   <>
                     <dt className="text-muted-foreground">Indirizzo</dt>
                     <dd className="text-foreground">{company.address}</dd>
                   </>
                 )}
+
                 <dt className="text-muted-foreground">Raggio copertura</dt>
                 <dd className="text-foreground">{company.radiusKm} km</dd>
+
                 <dt className="text-muted-foreground">Categorie</dt>
                 <dd className="text-foreground">
-                  {company.categories.map((cc) =>
-                    `${cc.categoria.settore.nome} / ${cc.categoria.nome}`,
-                  ).join(', ') || '—'}
+                  {categories
+                    .map((cc) => `${cc.categoria.settore.nome} / ${cc.categoria.nome}`)
+                    .join(', ') || '—'}
                 </dd>
+
                 <dt className="text-muted-foreground">Registrata il</dt>
                 <dd className="text-foreground">
                   {new Date(company.createdAt).toLocaleDateString('it-IT', {
-                    day: '2-digit', month: 'long', year: 'numeric',
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
                   })}
                 </dd>
+
                 {company.description && (
                   <>
                     <dt className="text-muted-foreground">Descrizione</dt>
@@ -161,35 +236,46 @@ export default async function ImpresaDetailPage({ params }: Props) {
           {/* Verifica account */}
           <Card>
             <CardContent className="p-6">
-              <p className="font-semibold text-foreground mb-4">Verifica account</p>
+              <p className="mb-4 font-semibold text-foreground">Verifica account</p>
+
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <VerifyBadge ok={company.user.emailVerified}        label="Email verificata" />
-                <VerifyBadge ok={company.user.phoneNumberVerified}  label="Telefono verificato" />
-                <VerifyBadge ok={company.verified}                  label="Impresa verificata" />
+                <VerifyBadge ok={company.user.emailVerified} label="Email verificata" />
+                <VerifyBadge ok={company.user.phoneNumberVerified} label="Telefono verificato" />
+                <VerifyBadge ok={company.verified} label="Impresa verificata" />
               </div>
+
               {!company.verified && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  L&apos;impresa non è ancora stata verificata manualmente. Usa il pulsante &quot;Segna come verificata&quot; nelle azioni a destra.
+                  L&apos;impresa non è ancora stata verificata manualmente. Usa il pulsante
+                  &quot;Segna come verificata&quot; nelle azioni a destra.
                 </p>
               )}
             </CardContent>
           </Card>
 
           {/* Sessioni recenti */}
-          {company.user.sessions.length > 0 && (
+          {sessions.length > 0 && (
             <Card>
               <CardContent className="p-6">
-                <p className="font-semibold text-foreground mb-4">Sessioni recenti</p>
+                <p className="mb-4 font-semibold text-foreground">Sessioni recenti</p>
+
                 <div className="space-y-3">
-                  {company.user.sessions.map((s) => (
+                  {sessions.map((s) => (
                     <div key={s.id} className="flex items-start gap-3 text-sm">
-                      <Monitor className="h-4 w-4 stroke-muted-foreground mt-0.5 shrink-0" strokeWidth={1.8} />
+                      <Monitor
+                        className="mt-0.5 h-4 w-4 shrink-0 stroke-muted-foreground"
+                        strokeWidth={1.8}
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="text-foreground truncate">{s.userAgent ?? 'User agent sconosciuto'}</p>
+                        <p className="truncate text-foreground">{s.userAgent ?? 'User agent sconosciuto'}</p>
                         <p className="text-xs text-muted-foreground">
-                          IP: {s.ipAddress ?? '—'} · {new Date(s.createdAt).toLocaleString('it-IT', {
-                            day: '2-digit', month: 'short', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit',
+                          IP: {s.ipAddress ?? '—'} ·{' '}
+                          {new Date(s.createdAt).toLocaleString('it-IT', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
                           })}
                           {new Date(s.expiresAt) < new Date() && ' · Scaduta'}
                         </p>
@@ -202,31 +288,28 @@ export default async function ImpresaDetailPage({ params }: Props) {
           )}
 
           {/* Movimenti crediti */}
-          {company.creditMovements.length > 0 && (
+          {creditMovements.length > 0 && (
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-4 flex items-center justify-between">
                   <p className="font-semibold text-foreground">Movimenti crediti</p>
-                  <span className="text-sm font-semibold text-foreground">
-                    Saldo: {crediti}
-                  </span>
+                  <span className="text-sm font-semibold text-foreground">Saldo: {crediti}</span>
                 </div>
+
                 <div className="space-y-2">
-                  {company.creditMovements.map((m) => (
+                  {creditMovements.map((m) => (
                     <div key={m.id} className="flex items-center justify-between text-sm">
                       <div className="min-w-0">
-                        <span className="text-foreground">
-                          {MOVEMENT_TYPE[m.type] ?? m.type}
-                        </span>
-                        {m.note && (
-                          <span className="text-muted-foreground"> — {m.note}</span>
-                        )}
+                        <span className="text-foreground">{MOVEMENT_TYPE[m.type] ?? m.type}</span>
+                        {m.note && <span className="text-muted-foreground"> — {m.note}</span>}
                       </div>
-                      <div className="shrink-0 text-right ml-4">
+
+                      <div className="ml-4 shrink-0 text-right">
                         <span className={`font-medium ${m.amount > 0 ? 'text-success' : 'text-destructive'}`}>
-                          {m.amount > 0 ? '+' : ''}{m.amount}
+                          {m.amount > 0 ? '+' : ''}
+                          {m.amount}
                         </span>
-                        <span className="text-xs text-muted-foreground ml-2">→ {m.balanceAfter}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">→ {m.balanceAfter}</span>
                       </div>
                     </div>
                   ))}
@@ -236,18 +319,21 @@ export default async function ImpresaDetailPage({ params }: Props) {
           )}
 
           {/* Batch crediti attivi */}
-          {company.creditBatches.length > 0 && (
+          {creditBatches.length > 0 && (
             <Card>
               <CardContent className="p-6">
-                <p className="font-semibold text-foreground mb-4">Batch crediti</p>
+                <p className="mb-4 font-semibold text-foreground">Batch crediti</p>
+
                 <div className="space-y-2">
-                  {company.creditBatches.map((b) => {
+                  {creditBatches.map((b) => {
                     const expired = new Date(b.expiresAt) < new Date()
+
                     return (
                       <div key={b.id} className="flex items-center justify-between text-sm">
                         <span className={expired ? 'text-muted-foreground line-through' : 'text-foreground'}>
                           {b.remaining}/{b.amount} crediti rimasti
                         </span>
+
                         <span className={`text-xs ${expired ? 'text-destructive' : 'text-muted-foreground'}`}>
                           {expired ? 'Scaduto ' : 'Scade '}
                           {new Date(b.expiresAt).toLocaleDateString('it-IT')}
@@ -261,24 +347,27 @@ export default async function ImpresaDetailPage({ params }: Props) {
           )}
 
           {/* Ultimi acquisti */}
-          {company.purchases.length > 0 && (
+          {purchases.length > 0 && (
             <Card>
               <CardContent className="p-6">
-                <p className="font-semibold text-foreground mb-4">
-                  Acquisti recenti ({company.purchases.length})
+                <p className="mb-4 font-semibold text-foreground">
+                  Acquisti recenti ({purchases.length})
                 </p>
+
                 <div className="space-y-2">
-                  {company.purchases.map((p) => (
+                  {purchases.map((p) => (
                     <div key={p.id} className="flex items-center justify-between text-sm">
                       <Link
                         href={`/richieste/${p.request.id}`}
-                        className="text-foreground hover:text-primary transition-colors"
+                        className="text-foreground transition-colors hover:text-primary"
                       >
                         {p.request.title}
                         {p.request.city ? ` · ${p.request.city}` : ''}
                       </Link>
-                      <span className="shrink-0 text-muted-foreground ml-4">
-                        {p.creditSpent} crediti · {new Date(p.purchasedAt).toLocaleDateString('it-IT')}
+
+                      <span className="ml-4 shrink-0 text-muted-foreground">
+                        {p.creditSpent} crediti ·{' '}
+                        {new Date(p.purchasedAt).toLocaleDateString('it-IT')}
                       </span>
                     </div>
                   ))}
@@ -288,35 +377,45 @@ export default async function ImpresaDetailPage({ params }: Props) {
           )}
 
           {/* Rescue */}
-          {company.rescues.length > 0 && (
+          {rescues.length > 0 && (
             <Card>
               <CardContent className="p-6">
-                <p className="font-semibold text-foreground mb-4">
-                  Rescue ({company.rescues.length})
+                <p className="mb-4 font-semibold text-foreground">
+                  Rescue ({rescues.length})
                   {openRescues > 0 && (
                     <span className="ml-2 text-xs font-normal text-warning">
                       {openRescues} aperti
                     </span>
                   )}
                 </p>
+
                 <div className="space-y-2">
-                  {company.rescues.map((r) => (
+                  {rescues.map((r) => (
                     <div key={r.id} className="flex items-center justify-between text-sm">
                       <Link
                         href={`/rescue/${r.id}`}
-                        className="text-foreground hover:text-primary transition-colors truncate max-w-[60%]"
+                        className="max-w-[60%] truncate text-foreground transition-colors hover:text-primary"
                       >
-                        {r.reason.substring(0, 60)}{r.reason.length > 60 ? '…' : ''}
+                        {r.reason.substring(0, 60)}
+                        {r.reason.length > 60 ? '…' : ''}
                       </Link>
-                      <span className={`shrink-0 text-xs ml-4 ${
-                        r.status === 'OPEN' || r.status === 'UNDER_REVIEW'
-                          ? 'text-warning' : 'text-muted-foreground'
-                      }`}>
-                        {r.status === 'OPEN'         ? 'Aperto'
-                          : r.status === 'UNDER_REVIEW' ? 'In revisione'
-                          : r.status === 'APPROVED'     ? 'Approvato'
-                          : r.status === 'REJECTED'     ? 'Rifiutato'
-                          : 'Chiuso'}
+
+                      <span
+                        className={`ml-4 shrink-0 text-xs ${
+                          r.status === 'OPEN' || r.status === 'UNDER_REVIEW'
+                            ? 'text-warning'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        {r.status === 'OPEN'
+                          ? 'Aperto'
+                          : r.status === 'UNDER_REVIEW'
+                            ? 'In revisione'
+                            : r.status === 'APPROVED'
+                              ? 'Approvato'
+                              : r.status === 'REJECTED'
+                                ? 'Rifiutato'
+                                : 'Chiuso'}
                         {' · '}
                         {new Date(r.createdAt).toLocaleDateString('it-IT')}
                       </span>
@@ -326,37 +425,47 @@ export default async function ImpresaDetailPage({ params }: Props) {
               </CardContent>
             </Card>
           )}
-
         </div>
 
         {/* Colonna destra */}
         <div className="space-y-4">
-
           {/* Riepilogo */}
           <Card>
-            <CardContent className="p-6 space-y-2">
+            <CardContent className="space-y-2 p-6">
               <p className="font-semibold text-foreground">Riepilogo</p>
+
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Crediti disponibili</span>
-                <span className={`font-semibold ${crediti === 0 ? 'text-destructive' : crediti <= 10 ? 'text-warning' : 'text-foreground'}`}>
+                <span
+                  className={`font-semibold ${
+                    crediti === 0
+                      ? 'text-destructive'
+                      : crediti <= 10
+                        ? 'text-warning'
+                        : 'text-foreground'
+                  }`}
+                >
                   {crediti}
                 </span>
               </div>
+
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Acquisti totali</span>
-                <span className="text-foreground">{company.purchases.length}</span>
+                <span className="text-foreground">{purchases.length}</span>
               </div>
+
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Rescue aperti</span>
-                <span className={`text-foreground ${openRescues >= 3 ? 'text-destructive font-medium' : ''}`}>
+                <span className={`text-foreground ${openRescues >= 3 ? 'font-medium text-destructive' : ''}`}>
                   {openRescues}
                 </span>
               </div>
+
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Ultimo accesso</span>
-                <span className="text-foreground text-xs">
-                  {company.user.sessions[0]
-                    ? new Date(company.user.sessions[0].createdAt).toLocaleDateString('it-IT')
+                <span className="text-xs text-foreground">
+                  {sessions[0]
+                    ? new Date(sessions[0].createdAt).toLocaleDateString('it-IT')
                     : '—'}
                 </span>
               </div>
@@ -370,7 +479,6 @@ export default async function ImpresaDetailPage({ params }: Props) {
             currentVerified={company.verified}
             currentAdminNote={company.adminNote ?? ''}
           />
-
         </div>
       </div>
     </div>
