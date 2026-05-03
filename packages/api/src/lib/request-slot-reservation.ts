@@ -1,9 +1,14 @@
-import crypto from 'node:crypto'
-import { Prisma } from '@fixpro/db'
+import { randomUUID } from 'node:crypto'
 
 type ReservationDb = {
-  $queryRaw<T = unknown>(query: Prisma.Sql): Promise<T>
-  $executeRaw(query: Prisma.Sql): Promise<number>
+  $queryRaw<T = unknown>(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<T>
+  $executeRaw(
+    query: TemplateStringsArray,
+    ...values: unknown[]
+  ): Promise<number>
 }
 
 type LockedRequestRow = {
@@ -54,34 +59,36 @@ export async function reserveRequestSlot(
   const now = new Date()
   const nextExpiry = input.expiresAt ?? new Date(now.getTime() + REQUEST_SLOT_RESERVATION_TTL_MS)
 
-  const lockedRequests = await db.$queryRaw<LockedRequestRow[]>(Prisma.sql`
+  const lockedRequests = await db.$queryRaw<LockedRequestRow[]>`
     SELECT "id", "status", "expiresAt", "maxBuyers"
     FROM "service_requests"
     WHERE "id" = ${input.requestId}
     FOR UPDATE
-  `)
+  `
 
   const request = lockedRequests[0]
   if (!request) {
     throw new Error('REQUEST_NOT_FOUND')
   }
+
   if (request.status !== 'APPROVED') {
     throw new Error('REQUEST_NOT_AVAILABLE')
   }
+
   if (request.expiresAt && request.expiresAt < now) {
     throw new Error('REQUEST_EXPIRED')
   }
 
   await expireActiveRequestSlotReservations(db, { requestId: input.requestId })
 
-  const existingReservations = await db.$queryRaw<ReservationRow[]>(Prisma.sql`
+  const existingReservations = await db.$queryRaw<ReservationRow[]>`
     SELECT "id", "status", "expiresAt"
     FROM "request_slot_reservations"
     WHERE "companyId" = ${input.companyId}
       AND "requestId" = ${input.requestId}
     LIMIT 1
     FOR UPDATE
-  `)
+  `
 
   const existingReservation = existingReservations[0]
   if (existingReservation?.status === 'COMPLETED') {
@@ -92,18 +99,15 @@ export async function reserveRequestSlot(
     }
   }
 
-  const purchaseCountRows = await db.$queryRaw<CountRow[]>(Prisma.sql`
+  const purchaseCountRows = await db.$queryRaw<CountRow[]>`
     SELECT COUNT(*)::int AS "count"
     FROM "request_purchases"
     WHERE "requestId" = ${input.requestId}
-  `)
+  `
 
   const completedPurchases = purchaseCountRows[0]?.count ?? 0
 
-  if (
-    request.maxBuyers !== null &&
-    completedPurchases >= request.maxBuyers
-  ) {
+  if (request.maxBuyers !== null && completedPurchases >= request.maxBuyers) {
     throw new Error('REQUEST_MAXBUYERS_EXCEEDED')
   }
 
@@ -111,13 +115,13 @@ export async function reserveRequestSlot(
     existingReservation?.status === 'ACTIVE' &&
     (!existingReservation.expiresAt || existingReservation.expiresAt > now)
   ) {
-    await db.$executeRaw(Prisma.sql`
+    await db.$executeRaw`
       UPDATE "request_slot_reservations"
       SET
         "expiresAt" = ${nextExpiry},
         "updatedAt" = NOW()
       WHERE "id" = ${existingReservation.id}
-    `)
+    `
 
     return {
       status: 'reserved',
@@ -126,19 +130,19 @@ export async function reserveRequestSlot(
     }
   }
 
-  const reservationId = existingReservation?.id ?? crypto.randomUUID()
+  const reservationId = existingReservation?.id ?? randomUUID()
 
   if (existingReservation) {
-    await db.$executeRaw(Prisma.sql`
+    await db.$executeRaw`
       UPDATE "request_slot_reservations"
       SET
         "status" = 'ACTIVE',
         "expiresAt" = ${nextExpiry},
         "updatedAt" = NOW()
       WHERE "id" = ${reservationId}
-    `)
+    `
   } else {
-    await db.$executeRaw(Prisma.sql`
+    await db.$executeRaw`
       INSERT INTO "request_slot_reservations" (
         "id",
         "requestId",
@@ -157,7 +161,7 @@ export async function reserveRequestSlot(
         NOW(),
         NOW()
       )
-    `)
+    `
   }
 
   return {
@@ -176,14 +180,14 @@ export async function completeRequestSlotReservation(
 ): Promise<'completed' | 'already_completed'> {
   await expireActiveRequestSlotReservations(db, input)
 
-  const reservationRows = await db.$queryRaw<ReservationRow[]>(Prisma.sql`
+  const reservationRows = await db.$queryRaw<ReservationRow[]>`
     SELECT "id", "status", "expiresAt"
     FROM "request_slot_reservations"
     WHERE "companyId" = ${input.companyId}
       AND "requestId" = ${input.requestId}
     LIMIT 1
     FOR UPDATE
-  `)
+  `
 
   const reservation = reservationRows[0]
   if (!reservation) {
@@ -201,14 +205,14 @@ export async function completeRequestSlotReservation(
     throw new Error('REQUEST_SLOT_RESERVATION_EXPIRED')
   }
 
-  await db.$executeRaw(Prisma.sql`
+  await db.$executeRaw`
     UPDATE "request_slot_reservations"
     SET
       "status" = 'COMPLETED',
       "expiresAt" = NULL,
       "updatedAt" = NOW()
     WHERE "id" = ${reservation.id}
-  `)
+  `
 
   return 'completed'
 }
@@ -220,11 +224,23 @@ export async function expireActiveRequestSlotReservations(
     companyId?: string
   },
 ): Promise<void> {
-  const companyFilter = input.companyId
-    ? Prisma.sql`AND "companyId" = ${input.companyId}`
-    : Prisma.empty
+  if (input.companyId) {
+    await db.$executeRaw`
+      UPDATE "request_slot_reservations"
+      SET
+        "status" = 'EXPIRED',
+        "updatedAt" = NOW()
+      WHERE "requestId" = ${input.requestId}
+        AND "companyId" = ${input.companyId}
+        AND "status" = 'ACTIVE'
+        AND "expiresAt" IS NOT NULL
+        AND "expiresAt" < NOW()
+    `
 
-  await db.$executeRaw(Prisma.sql`
+    return
+  }
+
+  await db.$executeRaw`
     UPDATE "request_slot_reservations"
     SET
       "status" = 'EXPIRED',
@@ -233,8 +249,7 @@ export async function expireActiveRequestSlotReservations(
       AND "status" = 'ACTIVE'
       AND "expiresAt" IS NOT NULL
       AND "expiresAt" < NOW()
-      ${companyFilter}
-  `)
+  `
 }
 
 export async function expireRequestSlotReservation(
@@ -245,11 +260,22 @@ export async function expireRequestSlotReservation(
     reservationId?: string
   },
 ): Promise<void> {
-  const reservationFilter = input.reservationId
-    ? Prisma.sql`AND "id" = ${input.reservationId}`
-    : Prisma.empty
+  if (input.reservationId) {
+    await db.$executeRaw`
+      UPDATE "request_slot_reservations"
+      SET
+        "status" = 'EXPIRED',
+        "updatedAt" = NOW()
+      WHERE "requestId" = ${input.requestId}
+        AND "companyId" = ${input.companyId}
+        AND "id" = ${input.reservationId}
+        AND "status" = 'ACTIVE'
+    `
 
-  await db.$executeRaw(Prisma.sql`
+    return
+  }
+
+  await db.$executeRaw`
     UPDATE "request_slot_reservations"
     SET
       "status" = 'EXPIRED',
@@ -257,6 +283,5 @@ export async function expireRequestSlotReservation(
     WHERE "requestId" = ${input.requestId}
       AND "companyId" = ${input.companyId}
       AND "status" = 'ACTIVE'
-      ${reservationFilter}
-  `)
+  `
 }
