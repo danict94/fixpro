@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { Dispatch, FormEventHandler, KeyboardEvent, ReactNode, SetStateAction } from 'react'
 import { Search } from 'lucide-react'
 import { Button } from '@fixpro/ui'
@@ -78,11 +78,26 @@ export function StepProject({
   setQuantity,
   WORK_TYPE_OPTIONS,
 }: StepProjectProps) {
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0)
   const listboxId = useId()
 
-  const hasSelectedProject = Boolean(selectedIntervento || selectedServizioNome)
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setActiveSuggestionIndex(0)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  const hasSelectedProject = Boolean(selectedIntervento)
   const showPopularFallback = searchQuery.trim() === '' && !hasSelectedProject
   const showSuggestions = searchQuery.trim().length > 0 && !hasSelectedProject
   const showNoResults =
@@ -109,30 +124,32 @@ export function StepProject({
 
   function selectActiveSuggestion() {
     if (!activeSuggestion) {
-      const firstIntervento = suggestedInterventi[0]
-      const firstServizio = suggestedServizi[0]
-
-      if (firstIntervento) {
-        onSelectIntervento(firstIntervento.id)
-        return
-      }
-
-      if (firstServizio) {
-        onSelectServizio(firstServizio.id)
-      }
-
       return
     }
 
     if (activeSuggestion.type === 'intervento') {
       onSelectIntervento(activeSuggestion.id)
+      setActiveSuggestionIndex(0)
       return
     }
 
     onSelectServizio(activeSuggestion.id)
+    setActiveSuggestionIndex(0)
   }
 
   function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      if (!selectedIntervento) {
+        event.preventDefault()
+
+        if (showSuggestions && activeSuggestion) {
+          selectActiveSuggestion()
+        }
+      }
+
+      return
+    }
+
     if (!showSuggestions || suggestionItems.length === 0) {
       return
     }
@@ -151,12 +168,6 @@ export function StepProject({
       return
     }
 
-    if (event.key === 'Enter') {
-      event.preventDefault()
-      selectActiveSuggestion()
-      return
-    }
-
     if (event.key === 'Escape') {
       setActiveSuggestionIndex(0)
     }
@@ -166,9 +177,9 @@ export function StepProject({
     <form onSubmit={onSubmit} className="space-y-5">
       {coverageBanner}
 
-      <div className="surface-section space-y-5 px-5 py-5 sm:px-6">
+      <div ref={containerRef} className="surface-section space-y-5 px-5 py-5 sm:px-6">
         <div>
-          <p className="text-sm font-semibold text-secondary">
+          <p className="text-secondary text-sm font-semibold">
             {selectedMacroGroupTitle && !hasSelectedProject
               ? 'Scegli il tipo di intervento'
               : 'Che tipo di lavoro devi affidare?'}
@@ -181,13 +192,13 @@ export function StepProject({
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="intervento-search" className="text-sm font-medium text-secondary">
+          <label htmlFor="intervento-search" className="text-secondary text-sm font-medium">
             Di cosa hai bisogno? <span className="text-danger">*</span>
           </label>
 
           <div className="relative">
             <Search
-              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2"
               aria-hidden="true"
             />
             <input
@@ -195,10 +206,13 @@ export function StepProject({
               ref={inputRef}
               type="text"
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => {
+                setSearchQuery(event.target.value)
+                setActiveSuggestionIndex(0)
+              }}
               onKeyDown={handleSearchKeyDown}
               placeholder="Es. rifacimento bagno, perdita acqua, imbiancare casa..."
-              className="flex h-12 w-full rounded-2xl border border-border bg-white pl-11 pr-4 text-sm text-secondary placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="border-border text-secondary placeholder:text-muted-foreground focus-visible:ring-ring flex h-12 w-full rounded-2xl border bg-white pr-4 pl-11 text-sm focus-visible:ring-2 focus-visible:outline-none"
               autoComplete="off"
               role="combobox"
               aria-expanded={showSuggestions}
@@ -222,8 +236,15 @@ export function StepProject({
               <div
                 id={listboxId}
                 role="listbox"
-                className="space-y-2 rounded-[24px] border border-border bg-white p-3"
+                aria-label="Suggerimenti interventi e servizi"
+                className="border-border space-y-2 rounded-[24px] border bg-white p-3"
               >
+                {suggestedInterventi.length > 0 && (
+                  <p className="text-muted-foreground px-2 text-xs font-semibold tracking-wide uppercase">
+                    Interventi
+                  </p>
+                )}
+
                 {suggestedInterventi.map((intervento, index) => {
                   const selected =
                     activeSuggestion?.type === 'intervento' && activeSuggestion.id === intervento.id
@@ -233,21 +254,24 @@ export function StepProject({
                       key={intervento.id}
                       id={`intervento-suggestion-${intervento.id}`}
                       type="button"
-                      onClick={() => onSelectIntervento(intervento.id)}
+                      onClick={() => {
+                        onSelectIntervento(intervento.id)
+                        setActiveSuggestionIndex(0)
+                      }}
                       onMouseEnter={() => setActiveSuggestionIndex(index)}
                       role="option"
                       aria-selected={selected}
                       className={`w-full rounded-[18px] border px-4 py-3 text-left transition ${
                         selected
                           ? 'border-primary/30 bg-primary/5'
-                          : 'border-transparent bg-[#F6F7FB] hover:-translate-y-0.5 hover:border-primary/20 hover:bg-primary/5'
+                          : 'hover:border-primary/20 hover:bg-primary/5 border-transparent bg-[#F6F7FB] hover:-translate-y-0.5'
                       }`}
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-secondary">
+                        <p className="text-secondary text-sm font-semibold">
                           {renderHighlightedText(intervento.nome, searchQuery)}
                         </p>
-                        <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[11px] font-semibold text-secondary">
+                        <span className="bg-secondary/10 text-secondary rounded-full px-2.5 py-1 text-[11px] font-semibold">
                           Intervento
                         </span>
                       </div>
@@ -257,6 +281,12 @@ export function StepProject({
                     </button>
                   )
                 })}
+
+                {suggestedServizi.length > 0 && (
+                  <p className="text-muted-foreground mt-3 px-2 text-xs font-semibold tracking-wide uppercase">
+                    Servizi correlati
+                  </p>
+                )}
 
                 {suggestedServizi.map((servizio, serviceIndex) => {
                   const index = suggestedInterventi.length + serviceIndex
@@ -268,21 +298,24 @@ export function StepProject({
                       key={`servizio-${servizio.id}`}
                       id={`servizio-suggestion-${servizio.id}`}
                       type="button"
-                      onClick={() => onSelectServizio(servizio.id)}
+                      onClick={() => {
+                        onSelectServizio(servizio.id)
+                        setActiveSuggestionIndex(0)
+                      }}
                       onMouseEnter={() => setActiveSuggestionIndex(index)}
                       role="option"
                       aria-selected={selected}
                       className={`w-full rounded-[18px] border px-4 py-3 text-left transition ${
                         selected
                           ? 'border-primary/30 bg-primary/5'
-                          : 'border-transparent bg-[#F6F7FB] hover:-translate-y-0.5 hover:border-primary/20 hover:bg-primary/5'
+                          : 'hover:border-primary/20 hover:bg-primary/5 border-transparent bg-[#F6F7FB] hover:-translate-y-0.5'
                       }`}
                     >
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-secondary">
+                        <p className="text-secondary text-sm font-semibold">
                           {renderHighlightedText(servizio.nome, searchQuery)}
                         </p>
-                        <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                        <span className="bg-primary/10 text-primary rounded-full px-2.5 py-1 text-[11px] font-semibold">
                           Servizio
                         </span>
                       </div>
@@ -295,8 +328,8 @@ export function StepProject({
                 })}
               </div>
             ) : (
-              <div className="rounded-[18px] border border-border bg-muted/40 px-4 py-4">
-                <p className="text-sm font-semibold text-secondary">Non trovi quello che cerchi?</p>
+              <div className="border-border bg-muted/40 rounded-[18px] border px-4 py-4">
+                <p className="text-secondary text-sm font-semibold">Non trovi quello che cerchi?</p>
                 <p className="muted-copy mt-1 text-sm">
                   Prova con una parola più semplice oppure torna ai lavori più richiesti per
                   scegliere quello più vicino.
@@ -305,9 +338,10 @@ export function StepProject({
                   type="button"
                   onClick={() => {
                     setSearchQuery('')
+                    setActiveSuggestionIndex(0)
                     inputRef.current?.focus()
                   }}
-                  className="mt-3 text-sm font-semibold text-primary"
+                  className="text-primary mt-3 text-sm font-semibold"
                 >
                   Continua con descrizione libera
                 </button>
@@ -319,7 +353,7 @@ export function StepProject({
         {showPopularFallback && (
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-medium text-secondary">
+              <p className="text-secondary text-sm font-medium">
                 {selectedMacroGroupTitle
                   ? `Interventi disponibili per ${selectedMacroGroupTitle}`
                   : 'Oppure scegli tra i più richiesti'}
@@ -336,10 +370,13 @@ export function StepProject({
                 <button
                   key={intervento.id}
                   type="button"
-                  onClick={() => onSelectIntervento(intervento.id)}
-                  className="rounded-[20px] border border-border bg-white px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-primary/20 hover:bg-primary/5"
+                  onClick={() => {
+                    onSelectIntervento(intervento.id)
+                    setActiveSuggestionIndex(0)
+                  }}
+                  className="border-border hover:border-primary/20 hover:bg-primary/5 rounded-[20px] border bg-white px-4 py-4 text-left transition hover:-translate-y-0.5"
                 >
-                  <p className="text-sm font-semibold text-secondary">{intervento.nome}</p>
+                  <p className="text-secondary text-sm font-semibold">{intervento.nome}</p>
                   <p className="muted-copy mt-1 line-clamp-2 text-xs leading-5">
                     {intervento.descrizione ?? 'Intervento disponibile su FixPro.'}
                   </p>
@@ -359,7 +396,7 @@ export function StepProject({
 
             <div className="surface-card border-0 px-5 py-5 shadow-none">
               <div className="mb-3">
-                <p className="text-sm font-semibold text-secondary">
+                <p className="text-secondary text-sm font-semibold">
                   Come vuoi affrontare il lavoro?
                 </p>
                 <p className="muted-copy mt-1 text-sm">
@@ -379,8 +416,8 @@ export function StepProject({
                       onClick={() => setWorkType(value)}
                       className={`group flex w-full items-start gap-3 rounded-[22px] border p-4 text-left transition-all duration-200 ${
                         selected
-                          ? 'scale-[1.01] border-primary bg-primary/10'
-                          : 'border-border bg-white hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5'
+                          ? 'border-primary bg-primary/10 scale-[1.01]'
+                          : 'border-border hover:border-primary/40 hover:bg-primary/5 bg-white hover:-translate-y-0.5'
                       }`}
                       aria-pressed={selected}
                     >
@@ -396,7 +433,7 @@ export function StepProject({
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold text-secondary">{title}</p>
+                          <p className="text-secondary text-sm font-semibold">{title}</p>
                           <span
                             className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
                               selected
@@ -404,7 +441,7 @@ export function StepProject({
                                 : 'border-muted-foreground/40'
                             }`}
                           >
-                            {selected && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                            {selected && <span className="bg-primary h-2.5 w-2.5 rounded-full" />}
                           </span>
                         </div>
                         <p className="muted-copy mt-1 text-sm">{description}</p>
@@ -421,7 +458,7 @@ export function StepProject({
             />
 
             <div className="space-y-1.5">
-              <label htmlFor="description" className="text-sm font-medium text-secondary">
+              <label htmlFor="description" className="text-secondary text-sm font-medium">
                 Descrizione del lavoro <span className="text-danger">*</span>
               </label>
               <textarea
@@ -431,15 +468,15 @@ export function StepProject({
                 placeholder="Descrivi il lavoro nel dettaglio: cosa va fatto, stato attuale, materiali, accessibilità, tempistiche preferite..."
                 maxLength={2000}
                 rows={5}
-                className="flex w-full resize-none rounded-2xl border border-border bg-white px-4 py-3 text-sm text-secondary placeholder:text-muted-foreground transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="border-border text-secondary placeholder:text-muted-foreground focus-visible:ring-ring flex w-full resize-none rounded-2xl border bg-white px-4 py-3 text-sm transition-colors duration-150 focus-visible:ring-2 focus-visible:outline-none"
               />
               <p className="muted-copy text-right text-xs">{description.length}/2000</p>
             </div>
 
             {dimensionMode !== 'none' && (
-              <div className="space-y-4 rounded-[22px] border border-border bg-white px-5 py-5">
+              <div className="border-border space-y-4 rounded-[22px] border bg-white px-5 py-5">
                 <div>
-                  <p className="text-sm font-semibold text-secondary">
+                  <p className="text-secondary text-sm font-semibold">
                     Dimensioni del lavoro, facoltativo ma consigliato
                   </p>
                   <p className="muted-copy mt-1 text-sm">
@@ -450,7 +487,7 @@ export function StepProject({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <label htmlFor="surface-mq" className="text-sm font-medium text-secondary">
+                    <label htmlFor="surface-mq" className="text-secondary text-sm font-medium">
                       Superficie stimata
                     </label>
                     <input
@@ -461,7 +498,7 @@ export function StepProject({
                       value={surfaceMq}
                       onChange={(event) => setSurfaceMq(event.target.value)}
                       placeholder="Es. 5, 20, 80"
-                      className="flex h-11 w-full rounded-2xl border border-border bg-white px-4 py-2 text-sm text-secondary placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="border-border text-secondary placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 w-full rounded-2xl border bg-white px-4 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                     />
                   </div>
 
@@ -469,7 +506,7 @@ export function StepProject({
                     <div className="space-y-1.5">
                       <label
                         htmlFor="measurement-type"
-                        className="text-sm font-medium text-secondary"
+                        className="text-secondary text-sm font-medium"
                       >
                         Tipo misura quantità
                       </label>
@@ -479,7 +516,7 @@ export function StepProject({
                         onChange={(event) =>
                           setMeasurementType(event.target.value as MeasurementType)
                         }
-                        className="flex h-11 w-full rounded-2xl border border-border bg-white px-4 py-2 text-sm text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="border-border text-secondary focus-visible:ring-ring flex h-11 w-full rounded-2xl border bg-white px-4 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                       >
                         <option value="mq">mq</option>
                         <option value="lineare">lineare</option>
@@ -491,7 +528,7 @@ export function StepProject({
 
                 {dimensionMode === 'surface-and-quantity' && (
                   <div className="space-y-1.5">
-                    <label htmlFor="quantity" className="text-sm font-medium text-secondary">
+                    <label htmlFor="quantity" className="text-secondary text-sm font-medium">
                       Quantità stimata
                     </label>
                     <input
@@ -502,7 +539,7 @@ export function StepProject({
                       value={quantity}
                       onChange={(event) => setQuantity(event.target.value)}
                       placeholder="Es. 1, 3, 10"
-                      className="flex h-11 w-full rounded-2xl border border-border bg-white px-4 py-2 text-sm text-secondary placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="border-border text-secondary placeholder:text-muted-foreground focus-visible:ring-ring flex h-11 w-full rounded-2xl border bg-white px-4 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                     />
                   </div>
                 )}
@@ -514,14 +551,18 @@ export function StepProject({
 
       {error && (
         <p
-          className="rounded-[18px] border border-danger/20 bg-danger/5 px-4 py-3 text-sm text-danger"
+          className="border-danger/20 bg-danger/5 text-danger rounded-[18px] border px-4 py-3 text-sm"
           role="alert"
         >
           {error}
         </p>
       )}
 
-      <Button type="submit" className="primary-pill h-11 w-full text-sm font-semibold">
+      <Button
+        type="submit"
+        disabled={!hasSelectedProject}
+        className="primary-pill h-11 w-full text-sm font-semibold"
+      >
         Continua
       </Button>
     </form>

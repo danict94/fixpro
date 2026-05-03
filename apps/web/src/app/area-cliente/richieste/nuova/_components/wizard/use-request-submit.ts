@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
 import { trpc } from '@/lib/trpc/client'
 import { useUploadThing } from '@/lib/uploadthing'
 import { buildDescriptionWithDimensions } from './dimensions'
@@ -62,11 +63,31 @@ export function useRequestSubmit({
     form.setStep((current) => Math.min(stepsLength - 1, current + 1))
   }
 
+  function validateProjectSelection() {
+    if (!form.interventoId) {
+      form.setError('Seleziona un intervento dai suggerimenti per continuare.')
+      return false
+    }
+
+    if (!categoriaId) {
+      form.setError('Non riusciamo ancora a collegare questo lavoro al professionista giusto.')
+      return false
+    }
+
+    return true
+  }
+
   function buildBaseRequestPayload() {
+    const interventoId = form.interventoId.trim()
+
+    if (!interventoId) {
+      throw new Error('INTERVENTO_REQUIRED')
+    }
+
     return {
-      interventoId: form.interventoId || undefined,
-      categoriaId: categoriaId || undefined,
-      servizioId: form.servizioId || undefined,
+      interventoId,
+      categoriaId: categoriaId?.trim() || undefined,
+      servizioId: form.servizioId.trim() || undefined,
       workType: form.workType,
       description: buildDescriptionWithDimensions({
         description: form.description,
@@ -94,7 +115,7 @@ export function useRequestSubmit({
     }
   }
 
-  function handleStep0(e: React.FormEvent) {
+  function handleStep0(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
 
@@ -111,17 +132,11 @@ export function useRequestSubmit({
     goNext()
   }
 
-  function handleStep1(e: React.FormEvent) {
+  function handleStep1(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
 
-    if (!form.interventoId && !form.servizioId) {
-      form.setError('Seleziona un intervento dai suggerimenti per continuare.')
-      return
-    }
-
-    if (!categoriaId) {
-      form.setError('Non riusciamo ancora a collegare questo lavoro al professionista giusto.')
+    if (!validateProjectSelection()) {
       return
     }
 
@@ -133,7 +148,7 @@ export function useRequestSubmit({
     goNext()
   }
 
-  function handleStep2(e: React.FormEvent) {
+  function handleStep2(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
 
@@ -150,7 +165,7 @@ export function useRequestSubmit({
     goNext()
   }
 
-  function handleStep3(e: React.FormEvent) {
+  function handleStep3(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
 
@@ -167,7 +182,7 @@ export function useRequestSubmit({
     goNext()
   }
 
-  function handleStep4(e: React.FormEvent) {
+  function handleStep4(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
 
@@ -191,9 +206,13 @@ export function useRequestSubmit({
     }
   }
 
-  async function handleStep5(e: React.FormEvent) {
+  async function handleStep5(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
+
+    if (!validateProjectSelection()) {
+      return
+    }
 
     if (!form.contactName.trim()) {
       form.setError('Il nome è obbligatorio.')
@@ -245,13 +264,17 @@ export function useRequestSubmit({
     }
   }
 
-  async function handleSendOtp(e: React.FormEvent) {
+  async function handleSendOtp(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
     setEmailAlreadyRegistered(false)
 
+    if (!validateProjectSelection()) {
+      return
+    }
+
     if (!form.contactPhone.trim()) {
-      form.setError("Il numero di telefono è obbligatorio per ricevere il codice via SMS.")
+      form.setError('Il numero di telefono è obbligatorio per ricevere il codice via SMS.')
       return
     }
 
@@ -291,9 +314,13 @@ export function useRequestSubmit({
     }
   }
 
-  async function handleVerifyOtp(e: React.FormEvent) {
+  async function handleVerifyOtp(e: FormEvent) {
     e.preventDefault()
     form.clearMessages()
+
+    if (!validateProjectSelection()) {
+      return
+    }
 
     if (form.otp.length !== 6) {
       form.setError('Inserisci il codice a 6 cifre.')
@@ -301,7 +328,7 @@ export function useRequestSubmit({
     }
 
     if (!form.contactPhone.trim()) {
-      form.setError("Il numero di telefono è obbligatorio per verificare il codice SMS.")
+      form.setError('Il numero di telefono è obbligatorio per verificare il codice SMS.')
       return
     }
 
@@ -349,7 +376,7 @@ export function useRequestSubmit({
     form.clearMessages()
 
     if (!form.contactPhone.trim()) {
-      form.setError("Il numero di telefono è obbligatorio per ricevere il codice via SMS.")
+      form.setError('Il numero di telefono è obbligatorio per ricevere il codice via SMS.')
       return
     }
 

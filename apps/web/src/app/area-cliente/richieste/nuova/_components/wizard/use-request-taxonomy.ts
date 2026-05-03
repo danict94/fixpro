@@ -31,48 +31,26 @@ function getServizioSearchScore({
 }) {
   const normalizedQuery = normalizeComparisonText(query)
 
-  if (!normalizedQuery) {
-    return null
-  }
+  if (!normalizedQuery) return null
 
   const queryTokens = normalizedQuery.split(' ').filter(Boolean)
-
-  if (queryTokens.length === 0) {
-    return null
-  }
+  if (queryTokens.length === 0) return null
 
   const haystack = normalizeComparisonText(
-    [
-      servizio.nome,
-      servizio.descrizione ?? '',
-      categoriaNome,
-      settoreNome,
-    ].join(' '),
+    [servizio.nome, servizio.descrizione ?? '', categoriaNome, settoreNome].join(' '),
   )
 
   let score = 0
 
-  if (haystack === normalizedQuery) {
-    score += 1000
-  }
-
-  if (haystack.includes(normalizedQuery)) {
-    score += 400
-  }
+  if (haystack === normalizedQuery) score += 1000
+  if (haystack.includes(normalizedQuery)) score += 400
 
   for (const token of queryTokens) {
-    if (haystack.includes(token)) {
-      score += 120
-    }
-
-    if (token.length >= 4 && haystack.includes(token.slice(0, -1))) {
-      score += 60
-    }
+    if (haystack.includes(token)) score += 120
+    if (token.length >= 4 && haystack.includes(token.slice(0, -1))) score += 60
   }
 
-  if (score <= 0) {
-    return null
-  }
+  if (score <= 0) return null
 
   return score + Math.max(0, 100 - position)
 }
@@ -101,12 +79,10 @@ export function useRequestTaxonomy({
   )
 
   const filteredInterventi = useMemo(() => {
-    if (!selectedMacroGroup) {
-      return interventi
-    }
+    if (!selectedMacroGroup) return interventi
 
-    const allowedInterventoSlugs = new Set(getGroupDetailInterventoSlugs(selectedMacroGroup))
-    return interventi.filter((intervento) => allowedInterventoSlugs.has(intervento.slug))
+    const allowed = new Set(getGroupDetailInterventoSlugs(selectedMacroGroup))
+    return interventi.filter((i) => allowed.has(i.slug))
   }, [interventi, selectedMacroGroup])
 
   const serviziDisponibili = useMemo(
@@ -125,7 +101,7 @@ export function useRequestTaxonomy({
   )
 
   const selectedIntervento = useMemo(
-    () => interventi.find((intervento) => intervento.id === interventoId) ?? null,
+    () => interventi.find((i) => i.id === interventoId) ?? null,
     [interventi, interventoId],
   )
 
@@ -151,68 +127,81 @@ export function useRequestTaxonomy({
     () =>
       selectedIntervento
         ? selectedIntervento.matchingCategorie
-            .map((matching) => {
-              const categoria = categorieById.get(matching.categoriaId)
+            .map((m) => {
+              const cat = categorieById.get(m.categoriaId)
 
-              return categoria
+              return cat
                 ? {
-                    ...categoria,
-                    isPrimary: matching.isPrimary,
-                    priorita: matching.priorita,
+                    ...cat,
+                    isPrimary: m.isPrimary,
+                    priorita: m.priorita,
                   }
                 : null
             })
-            .filter((categoria): categoria is CategoriaCompatibile => categoria !== null)
+            .filter((c): c is CategoriaCompatibile => c !== null)
         : [],
     [categorieById, selectedIntervento],
   )
 
-  const categoriaDerivata = useMemo(
-    () =>
-      categorieCompatibili.find((categoria) => categoria.id === categoriaId) ??
-      categorieById.get(categoriaId) ??
-      categorieCompatibili.find((categoria) => categoria.isPrimary) ??
+  const categoriaDerivata = useMemo(() => {
+    if (!selectedIntervento) return null
+
+    return (
+      categorieCompatibili.find((c) => c.id === categoriaId) ??
+      categorieCompatibili.find((c) => c.isPrimary) ??
       categorieCompatibili[0] ??
-      null,
-    [categorieById, categorieCompatibili, categoriaId],
-  )
+      null
+    )
+  }, [categorieCompatibili, categoriaId, selectedIntervento])
+
+  const interventiFiltratiPerCategoria = useMemo(() => {
+    if (!categoriaId) return filteredInterventi
+
+    return filteredInterventi.filter((intervento) =>
+      intervento.matchingCategorie.some((c) => c.categoriaId === categoriaId),
+    )
+  }, [filteredInterventi, categoriaId])
 
   const suggestedInterventi = useMemo(
-    () => getSuggestedInterventi(filteredInterventi, searchQuery),
-    [filteredInterventi, searchQuery],
+    () => getSuggestedInterventi(interventiFiltratiPerCategoria, searchQuery),
+    [interventiFiltratiPerCategoria, searchQuery],
   )
 
-  const suggestedServizi = useMemo<SuggestedServizio[]>(
-    () =>
-      serviziDisponibili
-        .map((servizio, index) => {
-          const score = getServizioSearchScore({
-            servizio,
-            categoriaNome: servizio.categoriaNome,
-            settoreNome: servizio.settoreNome,
-            query: searchQuery,
-            position: index,
-          })
-
-          return score === null ? null : { ...servizio, score }
-        })
-        .filter((servizio): servizio is SuggestedServizio => servizio !== null)
-        .sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score
-          return a.nome.localeCompare(b.nome, 'it')
-        })
-        .slice(0, 6),
-    [serviziDisponibili, searchQuery],
+  const suggestedInterventoNames = useMemo(
+    () => new Set(suggestedInterventi.map((intervento) => normalizeComparisonText(intervento.nome))),
+    [suggestedInterventi],
   )
+
+  const suggestedServizi = useMemo<SuggestedServizio[]>(() => {
+    return serviziDisponibili
+      .map((servizio, index) => {
+        const score = getServizioSearchScore({
+          servizio,
+          categoriaNome: servizio.categoriaNome,
+          settoreNome: servizio.settoreNome,
+          query: searchQuery,
+          position: index,
+        })
+
+        return score === null ? null : { ...servizio, score }
+      })
+      .filter((s): s is SuggestedServizio => s !== null)
+      .filter((servizio) => !suggestedInterventoNames.has(normalizeComparisonText(servizio.nome)))
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score
+        return a.nome.localeCompare(b.nome, 'it')
+      })
+      .slice(0, 6)
+  }, [serviziDisponibili, searchQuery, suggestedInterventoNames])
 
   const popularInterventi = useMemo(
-    () => getPopularInterventi(filteredInterventi),
-    [filteredInterventi],
+    () => getPopularInterventi(interventiFiltratiPerCategoria),
+    [interventiFiltratiPerCategoria],
   )
 
   return {
     selectedMacroGroup,
-    filteredInterventi,
+    filteredInterventi: interventiFiltratiPerCategoria,
     serviziDisponibili,
     selectedIntervento,
     dimensionMode,

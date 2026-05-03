@@ -12,7 +12,7 @@ type SendMagicLink = (email: string, callbackURL?: string) => Promise<void>
 type CreateRequestFromGuestInput = {
   db: PrismaClient
   input: {
-    interventoId?: string
+    interventoId: string
     categoriaId?: string
     servizioId?: string
     workType?: 'SMALL' | 'FULL' | 'UNKNOWN'
@@ -47,6 +47,13 @@ export async function createRequestFromGuest({
 }: CreateRequestFromGuestInput) {
   const email = input.email.toLowerCase().trim()
   const normalizedPhone = normalizePhoneToE164(input.phone.trim())
+
+  if (!input.interventoId.trim()) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Seleziona un intervento valido per continuare.',
+    })
+  }
 
   if (!normalizedPhone) {
     throw new TRPCError({
@@ -117,6 +124,9 @@ export async function createRequestFromGuest({
     const request = await db.$transaction((tx: Prisma.TransactionClient) =>
       buildAndCreateRequest(tx, existingUser.id, {
         ...input,
+        interventoId: input.interventoId.trim(),
+        categoriaId: input.categoriaId?.trim() || undefined,
+        servizioId: input.servizioId?.trim() || undefined,
         hasImages: false,
         contactName: input.name.trim(),
         contactSurname: input.surname.trim(),
@@ -130,14 +140,9 @@ export async function createRequestFromGuest({
     try {
       await sendMagicLink(email, '/area-cliente/richieste')
     } catch (emailErr: unknown) {
-      await db.serviceRequest
-        .delete({ where: { id: request.id } })
-        .catch((compErr: unknown) => {
-          console.error(
-            '[request-guest-create] Existing user request compensation failed:',
-            compErr,
-          )
-        })
+      await db.serviceRequest.delete({ where: { id: request.id } }).catch((compErr: unknown) => {
+        console.error('[request-guest-create] Existing user request compensation failed:', compErr)
+      })
 
       console.error('[request-guest-create] sendMagicLink failed:', emailErr)
 
@@ -169,6 +174,9 @@ export async function createRequestFromGuest({
 
     const request = await buildAndCreateRequest(tx, user.id, {
       ...input,
+      interventoId: input.interventoId.trim(),
+      categoriaId: input.categoriaId?.trim() || undefined,
+      servizioId: input.servizioId?.trim() || undefined,
       hasImages: false,
       contactName: input.name.trim(),
       contactSurname: input.surname.trim(),

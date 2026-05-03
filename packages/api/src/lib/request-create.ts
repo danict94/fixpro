@@ -2,11 +2,13 @@ import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { Prisma } from '@fixpro/db'
 
-// createInputBase usato anche da createFromGuest via .extend() — non aggiungere .superRefine() qui
+// createInputBase usato anche da createFromGuest via .extend().
+// Regola funnel: l'intervento è l'unità obbligatoria della richiesta.
+// Categoria e servizio sono contesto, non possono sostituire l'intervento.
 export const createInputBase = z.object({
-  interventoId: z.string().min(1).optional(),
-  categoriaId: z.string().min(1).optional(),
-  servizioId: z.string().optional(),
+  interventoId: z.string().trim().min(1, 'Seleziona un intervento valido'),
+  categoriaId: z.string().trim().min(1).optional(),
+  servizioId: z.string().trim().min(1).optional(),
   workType: z.enum(['SMALL', 'FULL', 'UNKNOWN']).optional(),
   description: z.string().min(20, 'Descrivi meglio il lavoro (min 20 caratteri)').max(2000),
 
@@ -14,17 +16,18 @@ export const createInputBase = z.object({
   address: z.string().optional(),
   streetNumber: z.string().optional(),
   city: z.string().optional(),
-  province: z.string().max(2).optional().transform((value) => value?.toUpperCase()),
+  province: z
+    .string()
+    .max(2)
+    .optional()
+    .transform((value) => value?.toUpperCase()),
   lat: z.number().optional(),
   lng: z.number().optional(),
 
   propertyType: z.enum(['RESIDENTIAL', 'COMMERCIAL']).optional(),
-  urgency: z.enum([
-    'WITHIN_1_MONTH',
-    'WITHIN_3_MONTHS',
-    'WITHIN_6_MONTHS',
-    'NO_PREFERENCE',
-  ]).optional(),
+  urgency: z
+    .enum(['WITHIN_1_MONTH', 'WITHIN_3_MONTHS', 'WITHIN_6_MONTHS', 'NO_PREFERENCE'])
+    .optional(),
   hasImages: z.boolean().default(false),
   intention: z.enum(['YES', 'MAYBE', 'INFO_ONLY']).optional(),
 
@@ -37,14 +40,6 @@ export const createInputBase = z.object({
 })
 
 export const createInput = createInputBase.superRefine((data, ctx) => {
-  if (!data.interventoId && !data.categoriaId) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Seleziona almeno un intervento valido',
-      path: ['interventoId'],
-    })
-  }
-
   if (!data.targetCompanyId && !data.province && data.lat === undefined) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -68,67 +63,79 @@ type ServizioResult = {
   categoriaId: string
 }
 
+type InterventoResult = {
+  id: string
+  nome: string
+}
+
 export async function buildAndCreateRequest(
   tx: Prisma.TransactionClient,
   clientId: string,
   input: CreateRequestData,
 ) {
-  const requestedInterventoId = input.interventoId?.trim() || null
+  const requestedInterventoId = input.interventoId.trim()
   const requestedCategoriaId = input.categoriaId?.trim() || null
+  const requestedServizioId = input.servizioId?.trim() || null
 
-  const servizio = input.servizioId
+  const intervento = (await tx.intervento.findUnique({
+    where: { id: requestedInterventoId },
+    select: { id: true, nome: true },
+  })) as InterventoResult | null
+
+  if (!intervento) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: "L'intervento selezionato non esiste",
+    })
+  }
+
+  const servizio = requestedServizioId
     ? ((await tx.servizio.findUnique({
-        where: { id: input.servizioId },
+        where: { id: requestedServizioId },
         select: { nome: true, categoriaId: true },
       })) as ServizioResult | null)
     : null
 
-  let resolvedCategoriaId = requestedCategoriaId
-
-  if (requestedInterventoId) {
-    const matchingCategorie = (await tx.matchingInterventoCat.findMany({
-      where: {
-        interventoId: requestedInterventoId,
-        attivo: true,
-      },
-      orderBy: [
-        { isPrimary: 'desc' },
-        { priorita: 'asc' },
-      ],
-      select: {
-        categoriaId: true,
-      },
-    })) as MatchingCategoriaResult[]
-
-    if (matchingCategorie.length === 0) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: "L'intervento selezionato non ha categorie compatibili attive",
-      })
-    }
-
-    const preferredCategoria =
-      (requestedCategoriaId
-        ? matchingCategorie.find(
-            (matching: MatchingCategoriaResult) =>
-              matching.categoriaId === requestedCategoriaId,
-          )
-        : null) ??
-      (servizio
-        ? matchingCategorie.find(
-            (matching: MatchingCategoriaResult) =>
-              matching.categoriaId === servizio.categoriaId,
-          )
-        : null) ??
-      matchingCategorie[0]
-
-    resolvedCategoriaId = preferredCategoria?.categoriaId ?? null
+  if (requestedServizioId && !servizio) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Il servizio selezionato non esiste',
+    })
   }
+
+  const matchingCategorie = (await tx.matchingInterventoCat.findMany({
+    where: {
+      interventoId: requestedInterventoId,
+      attivo: true,
+    },
+    orderBy: [{ isPrimary: 'desc' }, { priorita: 'asc' }],
+    select: {
+      categoriaId: true,
+    },
+  })) as MatchingCategoriaResult[]
+
+  if (matchingCategorie.length === 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: "L'intervento selezionato non ha categorie compatibili attive",
+    })
+  }
+
+  const preferredCategoria =
+    (requestedCategoriaId
+      ? matchingCategorie.find((matching) => matching.categoriaId === requestedCategoriaId)
+      : null) ??
+    (servizio
+      ? matchingCategorie.find((matching) => matching.categoriaId === servizio.categoriaId)
+      : null) ??
+    matchingCategorie[0]
+
+  const resolvedCategoriaId = preferredCategoria?.categoriaId ?? null
 
   if (!resolvedCategoriaId) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'Seleziona un intervento valido o una categoria compatibile',
+      message: "Non riusciamo a collegare l'intervento a una categoria compatibile",
     })
   }
 
@@ -144,12 +151,12 @@ export async function buildAndCreateRequest(
     })
   }
 
-  if (requestedInterventoId && servizio) {
+  if (servizio && requestedServizioId) {
     const matchingServizio = await tx.matchingInterventoServizio.findUnique({
       where: {
         interventoId_servizioId: {
           interventoId: requestedInterventoId,
-          servizioId: input.servizioId!,
+          servizioId: requestedServizioId,
         },
       },
       select: { attivo: true },
@@ -158,18 +165,20 @@ export async function buildAndCreateRequest(
     if (!matchingServizio?.attivo) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: "Il servizio selezionato non e' compatibile con l'intervento scelto",
+        message: "Il servizio selezionato non è compatibile con l'intervento scelto",
       })
     }
   }
 
-  const title = servizio ? `${categoria.nome} — ${servizio.nome}` : categoria.nome
+  const title = servizio
+    ? `${intervento.nome} — ${servizio.nome}`
+    : intervento.nome || categoria.nome
 
   return tx.serviceRequest.create({
     data: {
       clientId,
       categoriaId: resolvedCategoriaId,
-      servizioId: input.servizioId ?? null,
+      servizioId: requestedServizioId,
       interventoId: requestedInterventoId,
       workType: input.workType ?? 'UNKNOWN',
       title,
@@ -185,8 +194,8 @@ export async function buildAndCreateRequest(
       urgency: input.urgency ?? null,
       hasImages: input.hasImages,
       intention: input.intention ?? null,
-      contactName: input.contactName?.trim() ?? null,
-      contactSurname: input.contactSurname?.trim() ?? null,
+      contactName: input.contactName.trim(),
+      contactSurname: input.contactSurname.trim(),
       contactPhone: input.contactPhone?.trim() ?? null,
       contactEmail: input.contactEmail?.trim() ?? null,
       targetCompanyId: input.targetCompanyId ?? null,

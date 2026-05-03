@@ -11,18 +11,14 @@ export function AppShell({ sidebar, children }: AppShellProps) {
   const [open, setOpen] = React.useState(false)
 
   return (
-    <div className="flex min-h-screen bg-muted">
-
+    <div className="bg-muted flex min-h-screen">
       {/* MOBILE TOP BAR */}
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-14 bg-background border-b border-border md:hidden">
-        <button
-          onClick={() => setOpen(true)}
-          className="text-secondary"
-        >
+      <div className="bg-background border-border fixed top-0 right-0 left-0 z-40 flex h-14 items-center justify-between border-b px-4 md:hidden">
+        <button onClick={() => setOpen(true)} className="text-secondary">
           ☰
         </button>
 
-        <span className="font-semibold text-secondary">
+        <span className="text-secondary font-semibold">
           Fix<span className="text-primary">Pro</span>
         </span>
 
@@ -30,7 +26,7 @@ export function AppShell({ sidebar, children }: AppShellProps) {
       </div>
 
       {/* SIDEBAR DESKTOP */}
-      <div className="hidden md:flex md:w-[260px] md:shrink-0 border-r border-border bg-background">
+      <div className="border-border bg-background hidden border-r md:flex md:w-[260px] md:shrink-0">
         {sidebar}
       </div>
 
@@ -38,13 +34,13 @@ export function AppShell({ sidebar, children }: AppShellProps) {
       {open && (
         <>
           <div
-            className="fixed inset-0 bg-black/30 z-40 md:hidden"
+            className="fixed inset-0 z-40 bg-black/30 md:hidden"
             onClick={() => setOpen(false)}
           />
 
-          <div className="fixed inset-y-0 left-0 z-50 w-[260px] bg-background shadow-xl md:hidden">
-            {React.isValidElement(sidebar)
-              ? React.cloneElement(sidebar as any, {
+          <div className="bg-background fixed inset-y-0 left-0 z-50 w-[260px] shadow-xl md:hidden">
+            {React.isValidElement<{ onClose?: () => void }>(sidebar)
+              ? React.cloneElement(sidebar, {
                   onClose: () => setOpen(false),
                 })
               : sidebar}
@@ -53,9 +49,7 @@ export function AppShell({ sidebar, children }: AppShellProps) {
       )}
 
       {/* CONTENT */}
-      <main className="flex-1 pt-14 md:pt-0">
-        {children}
-      </main>
+      <main className="flex-1 pt-14 md:pt-0">{children}</main>
     </div>
   )
 }

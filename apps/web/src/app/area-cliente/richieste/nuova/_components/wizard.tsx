@@ -82,9 +82,7 @@ export function NuovaRichiestaWizard({
   })
 
   const resolvedCategoriaId =
-    taxonomy.categoriaDerivata?.id ??
-    prefill.selectedServizio?.categoriaId ??
-    form.categoriaId
+    taxonomy.categoriaDerivata?.id ?? prefill.selectedServizio?.categoriaId ?? form.categoriaId
 
   const submit = useRequestSubmit({
     isGuest,
@@ -150,8 +148,7 @@ export function NuovaRichiestaWizard({
   }
 
   function handleSelectServizio(nextServizioId: string) {
-    const servizio =
-      taxonomy.serviziDisponibili.find((item) => item.id === nextServizioId) ?? null
+    const servizio = taxonomy.serviziDisponibili.find((item) => item.id === nextServizioId) ?? null
 
     if (!servizio) {
       return
@@ -253,9 +250,9 @@ export function NuovaRichiestaWizard({
 
       {targetCompany && (
         <div className="surface-section flex items-start gap-3 px-5 py-4">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 stroke-primary" strokeWidth={1.9} />
+          <Sparkles className="stroke-primary mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.9} />
           <div>
-            <p className="text-sm font-medium text-secondary">
+            <p className="text-secondary text-sm font-medium">
               Richiesta diretta a{' '}
               <span className="text-primary">{targetCompany.ragioneSociale}</span>
             </p>
@@ -268,7 +265,7 @@ export function NuovaRichiestaWizard({
       )}
 
       <Card className="surface-card border-0 shadow-none">
-        <CardHeader className="space-y-5 px-6 pb-3 pt-6 sm:px-8">
+        <CardHeader className="space-y-5 px-6 pt-6 pb-3 sm:px-8">
           {form.step > 0 && (
             <button type="button" onClick={goBack} className="secondary-link w-fit text-sm">
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -277,11 +274,11 @@ export function NuovaRichiestaWizard({
           )}
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <StepIcon className="h-4 w-4 stroke-primary" aria-hidden="true" />
+            <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+              <StepIcon className="stroke-primary h-4 w-4" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-secondary">{steps[form.step]}</p>
+              <p className="text-secondary text-sm font-semibold">{steps[form.step]}</p>
               <p className="muted-copy text-xs">
                 Step {form.step + 1} di {steps.length}
               </p>
@@ -289,9 +286,9 @@ export function NuovaRichiestaWizard({
           </div>
 
           <div className="surface-card border-0 px-4 py-4 shadow-none">
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
               <div
-                className="h-full bg-primary transition-all duration-300 ease-out"
+                className="bg-primary h-full transition-all duration-300 ease-out"
                 style={{ width: `${((form.step + 1) / steps.length) * 100}%` }}
                 aria-hidden="true"
               />
@@ -299,7 +296,7 @@ export function NuovaRichiestaWizard({
           </div>
         </CardHeader>
 
-        <CardContent className="px-6 pb-6 pt-4 sm:px-8 sm:pb-8">
+        <CardContent className="px-6 pt-4 pb-6 sm:px-8 sm:pb-8">
           {form.step === 0 && (
             <StepLocation
               mapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''}
@@ -323,14 +320,23 @@ export function NuovaRichiestaWizard({
           {form.step === 1 && (
             <StepProject
               error={form.error}
-              onSubmit={submit.handleStep1}
+              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                e.preventDefault()
+
+                form.clearMessages()
+
+                if (!form.interventoId) {
+                  form.setError('Seleziona un tipo di intervento per continuare')
+                  return
+                }
+
+                submit.handleStep1(e)
+              }}
               coverageBanner={null}
               selectedIntervento={taxonomy.selectedIntervento}
               selectedServizioNome={prefill.selectedServizio?.nome ?? null}
               selectedCategoriaNome={
-                taxonomy.categoriaDerivata?.nome ??
-                prefill.selectedServizio?.categoria.nome ??
-                null
+                taxonomy.categoriaDerivata?.nome ?? prefill.selectedServizio?.categoria.nome ?? null
               }
               suggestedInterventi={taxonomy.suggestedInterventi}
               suggestedServizi={taxonomy.suggestedServizi}
