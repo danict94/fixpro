@@ -18,6 +18,49 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // 🔒 PROTEZIONE GLOBALE (TEMP)
+  const isProtected = process.env.SITE_PROTECTED === 'true'
+  const USER = process.env.SITE_USER
+  const PASS = process.env.SITE_PASSWORD
+
+  const PUBLIC_PATHS = [
+    '/api',
+    '/_next',
+    '/favicon.ico',
+  ]
+
+  const isPublic = PUBLIC_PATHS.some(path =>
+    pathname.startsWith(path)
+  )
+
+  if (isProtected && !isPublic) {
+    const basicAuth = req.headers.get('authorization')
+
+    if (basicAuth) {
+      const authValue = basicAuth.split(' ')[1]
+      const [user, pwd] = atob(authValue).split(':')
+
+      if (user === USER && pwd === PASS) {
+        // passa alla logica sotto
+      } else {
+        return new NextResponse('Auth required', {
+          status: 401,
+          headers: {
+            'WWW-Authenticate': 'Basic realm="Secure Area"',
+          },
+        })
+      }
+    } else {
+      return new NextResponse('Auth required', {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Basic realm="Secure Area"',
+        },
+      })
+    }
+  }
+    // 👇 LA TUA LOGICA ESISTENTE (NON TOCCATA)
+  
   const isPrivateClientRoute = pathname.startsWith('/area-cliente')
   const isPrivateCompanyRoute = pathname.startsWith('/area-impresa')
 
