@@ -4,12 +4,35 @@ import { createTRPCRouter, superAdminProcedure, adminProcedure } from '../trpc'
 import * as Sentry from '@sentry/node'
 import type { Prisma } from '@fixpro/db'
 import type { Context } from '../trpc'
-import crypto from 'crypto'
+import { createHmac } from 'node:crypto'
+
+type AdminListRow = {
+  id: string
+  name: string
+  email: string
+  adminRole: 'SUPER_ADMIN' | 'ADMIN' | null
+  createdAt: Date
+  sessions: Array<{ updatedAt: Date }>
+}
+
+type AdminAuditLogRow = {
+  id: string
+  admin: {
+    name: string
+    email: string
+  }
+  action: string
+  targetId: string | null
+  targetType: string | null
+  meta: unknown
+  createdAt: Date
+}
 
 function generateIdempotencyKey(action: string, params: Record<string, unknown>): string {
   const payload = `${action}:${JSON.stringify(params)}`
   const secret = process.env.BETTER_AUTH_SECRET || 'fallback-secret'
-  return crypto.createHmac('sha256', secret).update(payload).digest('hex')
+
+  return createHmac('sha256', secret).update(payload).digest('hex')
 }
 
 function getPasswordResetSender(ctx: Context) {
@@ -25,7 +48,7 @@ function getPasswordResetSender(ctx: Context) {
 
 export const adminUsersRouter = createTRPCRouter({
   list: adminProcedure.query(async ({ ctx }) => {
-    const admins = await ctx.db.user.findMany({
+    const admins = (await ctx.db.user.findMany({
       where: { adminRole: { not: null } },
       select: {
         id: true,
@@ -40,7 +63,7 @@ export const adminUsersRouter = createTRPCRouter({
         },
       },
       orderBy: { createdAt: 'asc' },
-    })
+    })) as AdminListRow[]
 
     return admins.map((admin) => ({
       id: admin.id,
@@ -140,6 +163,7 @@ export const adminUsersRouter = createTRPCRouter({
           tags: { action: 'invite_admin', phase: 'tx' },
           extra: { email },
         })
+
         throw err
       }
 
@@ -473,7 +497,7 @@ export const adminUsersRouter = createTRPCRouter({
         throw new TRPCError({ code: 'UNAUTHORIZED' })
       }
 
-      const logs = await ctx.db.adminAuditLog.findMany({
+      const logs = (await ctx.db.adminAuditLog.findMany({
         take: input.limit + 1,
         ...(input.cursor && {
           skip: 1,
@@ -490,7 +514,7 @@ export const adminUsersRouter = createTRPCRouter({
           createdAt: true,
         },
         orderBy: { createdAt: 'desc' },
-      })
+      })) as AdminAuditLogRow[]
 
       let nextCursor: string | undefined
 
