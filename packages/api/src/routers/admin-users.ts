@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
 import { createTRPCRouter, superAdminProcedure, adminProcedure } from '../trpc'
 import * as Sentry from '@sentry/node'
+import type { Prisma } from '@fixpro/db'
 import type { Context } from '../trpc'
 import crypto from 'crypto'
 
@@ -79,7 +80,7 @@ export const adminUsersRouter = createTRPCRouter({
       let inviteStatus: 'invited_new_user' | 'invited_existing_user' | 'access_link_resent' = 'invited_new_user'
 
       try {
-        await ctx.db.$transaction(async (tx) => {
+        await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
           if (existing) {
             inviteStatus = existing.adminRole === input.adminRole
               ? 'access_link_resent'
@@ -133,7 +134,7 @@ export const adminUsersRouter = createTRPCRouter({
       try {
         await sendPasswordResetEmail(email, 'invite')
       } catch (emailErr) {
-        await ctx.db.$transaction(async (tx) => {
+        await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
           await tx.adminAuditLog.deleteMany({ where: { idempotencyKey } })
 
           if (!existing) {

@@ -44,10 +44,16 @@ $checks = @(
     Description = "Prefer prisma.$queryRaw<RowType[]> so map/reduce callbacks are typed."
   },
   @{
-    Name = "P0 - Prisma transactions with untyped tx callback"
+    Name = "P0 - Prisma.Sql namespace usage"
     Severity = "P0"
+    Pattern = 'Prisma\.Sql'
+    Description = "Prisma.Sql may not be exported by the generated Prisma namespace on Vercel. Prefer TemplateStringsArray for tagged raw-query helper shapes, or avoid exposing Prisma.Sql in custom types."
+  },
+  @{
+    Name = "P1 - Prisma transactions with untyped tx callback"
+    Severity = "P1"
     Pattern = '\$transaction\s*\(\s*(?:async\s*)?\(\s*(?![^)]*:)[A-Za-z_$][\w$]*\s*\)\s*=>'
-    Description = "Transaction callback param has no explicit type. Usually inferred, but review if Vercel flags it."
+    Description = "Usually inferred by Prisma. Type explicitly only if Vercel/typecheck reports tx as implicit any."
   },
   @{
     Name = "P1 - Promise catch callbacks with untyped error variable"
@@ -72,6 +78,30 @@ $checks = @(
     Severity = "P1"
     Pattern = 'Prisma\.NullableJsonNullValueInput'
     Description = "Can be version-sensitive. Review if generated Prisma client differs."
+  },
+  @{
+    Name = "P1 - Prisma namespace imported from @fixpro/db"
+    Severity = "P1"
+    Pattern = 'import\s*\{\s*Prisma\s*\}\s*from\s*[''"]@fixpro/db[''"]'
+    Description = "Review Prisma namespace imports from @fixpro/db. Some generated namespace members can differ in CI/Vercel."
+  },
+  @{
+  Name = "P1 - Generated DB enum/type imports from @fixpro/db"
+  Severity = "P1"
+  Pattern = 'import\s+type\s*\{\s*[A-Za-z_$][\w$]*(Tier|Status|Role|Type|Enum)[A-Za-z_$\w$]*\s*\}\s*from\s*[''"]@fixpro/db[''"]'
+  Description = "Review generated enum/type imports from @fixpro/db. Vercel may fail if the wrapper package does not export the generated member."
+},
+  @{
+    Name = "P1 - Prisma.sql helper usage"
+    Severity = "P1"
+    Pattern = 'Prisma\.sql'
+    Description = "Prisma.sql can be valid, but avoid coupling custom helper signatures to Prisma.Sql."
+  },
+  @{
+    Name = "P1 - Prisma raw unsafe usage"
+    Severity = "P1"
+    Pattern = '\$(queryRawUnsafe|executeRawUnsafe)\b'
+    Description = "Unsafe raw SQL should be reviewed carefully before production deploy."
   },
   @{
     Name = "P1 - unknown as number/string/boolean"
@@ -121,7 +151,6 @@ foreach ($check in $checks) {
 
   foreach ($path in $existingPaths) {
     $result = pnpm exec rg -n --pcre2 --glob '!**/*.test.ts' --glob '!**/*.spec.ts' --glob '!**/tests/**' $check.Pattern $path
-
     $exitCode = $LASTEXITCODE
 
     if ($exitCode -eq 0 -and $result) {

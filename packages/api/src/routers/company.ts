@@ -1,15 +1,17 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import type { prisma } from '@fixpro/db'
+import type { Prisma } from '@fixpro/db'
+import { slugify } from '@fixpro/shared'
 import {
   createTRPCRouter,
   companyProcedure,
   protectedProcedure,
   publicProcedure,
 } from '../trpc'
-import { slugify } from '@fixpro/shared'
 
-const PARTITA_IVA_IN_USE_MESSAGE = 'Questa partita IVA Ã¨ giÃ  associata a un profilo impresa.'
+const PARTITA_IVA_IN_USE_MESSAGE = 'Questa partita IVA è già associata a un profilo impresa.'
+
+type CompanyTaxonomyDb = Pick<Prisma.TransactionClient, 'categoria' | 'servizio'>
 
 function isPartitaIvaUniqueError(error: unknown) {
   if (!error || typeof error !== 'object') return false
@@ -25,7 +27,7 @@ function isPartitaIvaUniqueError(error: unknown) {
 }
 
 async function validateCompanyTaxonomySelection(
-  db: typeof prisma,
+  db: CompanyTaxonomyDb,
   categoriaIds: string[],
   servizioIds: string[],
 ) {
@@ -57,14 +59,14 @@ async function validateCompanyTaxonomySelection(
   if (activeCategories.length !== uniqueCategoriaIds.length) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'Una o piÃ¹ categorie selezionate non sono valide',
+      message: 'Una o più categorie selezionate non sono valide',
     })
   }
 
   if (activeServices.length !== uniqueServizioIds.length) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
-      message: 'Uno o piÃ¹ servizi selezionati non sono validi',
+      message: 'Uno o più servizi selezionati non sono validi',
     })
   }
 
@@ -182,7 +184,7 @@ export const companyRouter = createTRPCRouter({
       }
 
       try {
-        return await ctx.db.$transaction(async (tx) => {
+        return await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
           if (ctx.session.user.role !== 'COMPANY') {
             await tx.user.update({
               where: { id: ctx.session.user.id },
@@ -204,10 +206,14 @@ export const companyRouter = createTRPCRouter({
 
           if (existing) {
             const existingCategoryIds = new Set(
-              existing.categories.map((category) => category.categoriaId),
+              existing.categories.map(
+                (category: { categoriaId: string }) => category.categoriaId,
+              ),
             )
             const existingServiceIds = new Set(
-              existing.services.map((service) => service.servizioId),
+              existing.services.map(
+                (service: { servizioId: string }) => service.servizioId,
+              ),
             )
 
             const missingCategoryIds = categoriaIds.filter(
@@ -501,7 +507,7 @@ export const companyRouter = createTRPCRouter({
         .map((service) => service.servizioId)
         .filter((servizioId) => !servizioIds.includes(servizioId))
 
-      return ctx.db.$transaction(async (tx) => {
+      return ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
         if (categoriaIdsToRemove.length > 0) {
           await tx.companyCategory.deleteMany({
             where: {

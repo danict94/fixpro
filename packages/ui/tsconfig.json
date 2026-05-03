@@ -3,16 +3,18 @@
   "compilerOptions": {
     "module": "ESNext",
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
+
+    "jsx": "react-jsx",
 
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "google.maps"]
   },
   "include": ["src"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }

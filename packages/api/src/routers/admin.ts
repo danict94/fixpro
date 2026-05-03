@@ -904,7 +904,7 @@ const companiesRouter = createTRPCRouter({
       const expiresAt = new Date()
       expiresAt.setFullYear(expiresAt.getFullYear() + 1)
 
-      return ctx.db.$transaction(async (tx) => {
+      return ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
         const balanceBefore = await syncCompanyCreditBalanceTx(tx, input.companyId)
         const balanceAfter  = balanceBefore + input.amount
 
@@ -1052,7 +1052,7 @@ const rescueRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const isResolved = ['APPROVED', 'REJECTED', 'CLOSED'].includes(input.status)
 
-      return ctx.db.$transaction(async (tx) => {
+      return ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
         // P0-3 FIX: Pessimistic lock su rescue row PRIMA di leggere status
         // Questo previene double-refund se due admin approvano simultaneamente
         await tx.$queryRaw`

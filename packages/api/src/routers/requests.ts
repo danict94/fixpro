@@ -217,7 +217,7 @@ export const requestsRouter = createTRPCRouter({
         province: input.province,
       })
 
-      const result = await ctx.db.$transaction((tx) =>
+       const result = await ctx.db.$transaction((tx: Prisma.TransactionClient) =>
         buildAndCreateRequest(tx, ctx.session.user.id, input),
       )
 
