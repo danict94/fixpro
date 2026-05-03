@@ -15,6 +15,79 @@ const STATUS_CONFIG = {
   EXPIRED: { label: 'Scaduta', variant: 'secondary' },
 } as const
 
+type RequestStatus = keyof typeof STATUS_CONFIG
+
+type ParsedMetaItem = {
+  label: string
+  value: string
+}
+
+type AdminIntervento = {
+  id: string
+  nome: string
+}
+
+type RequestPurchase = {
+  id: string
+  creditSpent: number
+  purchasedAt: Date | string
+  company: {
+    ragioneSociale: string
+    city: string | null
+  }
+}
+
+type AdminRequestDetail = {
+  id: string
+  title: string
+  description: string | null
+  status: RequestStatus
+  interventoId: string | null
+  city: string | null
+  province: string | null
+  address: string | null
+  streetNumber: string | null
+  cap: string | null
+  propertyType: string | null
+  urgency: string | null
+  intention: string | null
+  hasImages: boolean
+  createdAt: Date | string
+  approvedAt: Date | string | null
+  expiresAt: Date | string | null
+  rejectedReason: string | null
+  creditCost: number | null
+  maxBuyers: number | null
+  contactName: string | null
+  contactSurname: string | null
+  contactPhone: string | null
+  contactEmail: string | null
+  categoria: {
+    nome: string
+    settore: {
+      nome: string
+    }
+  }
+  servizio: {
+    nome: string
+  } | null
+  client: {
+    name: string
+    email: string
+    phoneNumber: string | null
+  }
+  targetCompany: {
+    ragioneSociale: string
+    slug: string | null
+  } | null
+  purchases: RequestPurchase[]
+}
+
+type MatchingCompaniesResult = {
+  total: number
+  byCoords: boolean
+}
+
 const PROPERTY_TYPE_LABEL: Record<string, string> = {
   RESIDENTIAL: 'Residenziale',
   COMMERCIAL: 'Commerciale',
@@ -40,22 +113,29 @@ interface Props {
 export default async function RichiestaDetailPage({ params }: Props) {
   const { id } = await params
 
-  let richiesta: Awaited<ReturnType<typeof api.admin.requests.get>>
-  let matching: Awaited<ReturnType<typeof api.admin.requests.matchingCompanies>>
+  let richiesta: AdminRequestDetail
+  let matching: MatchingCompaniesResult
 
   try {
-    ;[richiesta, matching] = await Promise.all([
+    const [richiestaResult, matchingResult] = await Promise.all([
       api.admin.requests.get({ id }),
       api.admin.requests.matchingCompanies({ requestId: id }),
     ])
+
+    richiesta = richiestaResult as AdminRequestDetail
+    matching = matchingResult as MatchingCompaniesResult
   } catch {
     notFound()
   }
 
-  const interventi = await api.taxonomy.getInterventi()
+  const interventi = (await api.taxonomy.getInterventi()) as AdminIntervento[]
   const interventoNome =
-    interventi.find((intervento) => intervento.id === richiesta.interventoId)?.nome ?? null
-  const parsedDescription = parseRequestDescription(richiesta.description)
+    interventi.find((intervento: AdminIntervento) => intervento.id === richiesta.interventoId)
+      ?.nome ?? null
+
+  const parsedDescription = parseRequestDescription(richiesta.description ?? '')
+  const parsedMeta = parsedDescription.meta as ParsedMetaItem[]
+
   const location = [richiesta.city, richiesta.province].filter(Boolean).join(', ')
   const headingTitle = interventoNome
     ? location
@@ -63,9 +143,7 @@ export default async function RichiestaDetailPage({ params }: Props) {
       : interventoNome
     : richiesta.title
 
-  const cfg =
-    STATUS_CONFIG[richiesta.status as keyof typeof STATUS_CONFIG] ??
-    { label: richiesta.status, variant: 'secondary' as const }
+  const cfg = STATUS_CONFIG[richiesta.status]
 
   return (
     <div className="space-y-6">
@@ -87,9 +165,8 @@ export default async function RichiestaDetailPage({ params }: Props) {
             {richiesta.servizio ? ` · ${richiesta.servizio.nome}` : ''}
           </p>
         </div>
-        <Badge variant={cfg.variant as 'secondary' | 'success' | 'warning' | 'destructive'}>
-          {cfg.label}
-        </Badge>
+
+        <Badge variant={cfg.variant}>{cfg.label}</Badge>
       </div>
 
       {richiesta.status === 'PENDING' &&
@@ -137,7 +214,7 @@ export default async function RichiestaDetailPage({ params }: Props) {
             <CardContent className="space-y-4 p-6">
               <p className="font-semibold text-foreground">Descrizione</p>
               <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {parsedDescription.description}
+                {parsedDescription.description || 'Descrizione non specificata.'}
               </p>
 
               {parsedDescription.hasMeta && (
@@ -145,8 +222,9 @@ export default async function RichiestaDetailPage({ params }: Props) {
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     Dimensioni lavoro
                   </p>
+
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {parsedDescription.meta.map((item) => (
+                    {parsedMeta.map((item: ParsedMetaItem) => (
                       <span
                         key={`${item.label}-${item.value}`}
                         className="rounded-full border border-border bg-white px-3 py-1 text-xs font-medium text-foreground"
@@ -163,6 +241,7 @@ export default async function RichiestaDetailPage({ params }: Props) {
           <Card>
             <CardContent className="p-6">
               <p className="mb-4 font-semibold text-foreground">Dettagli</p>
+
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <dt className="text-muted-foreground">Settore</dt>
                 <dd className="text-foreground">{richiesta.categoria.settore.nome}</dd>
@@ -290,8 +369,9 @@ export default async function RichiestaDetailPage({ params }: Props) {
                 <p className="mb-4 font-semibold text-foreground">
                   Acquisti ({richiesta.purchases.length})
                 </p>
+
                 <div className="space-y-2">
-                  {richiesta.purchases.map((purchase) => (
+                  {richiesta.purchases.map((purchase: RequestPurchase) => (
                     <div key={purchase.id} className="flex items-center justify-between text-sm">
                       <span className="text-foreground">{purchase.company.ragioneSociale}</span>
                       <span className="text-muted-foreground">
@@ -310,23 +390,29 @@ export default async function RichiestaDetailPage({ params }: Props) {
           <Card>
             <CardContent className="p-6">
               <p className="mb-3 font-semibold text-foreground">Cliente</p>
+
               <div className="space-y-1 text-sm">
                 <p className="font-medium text-foreground">{richiesta.client.name}</p>
                 <p className="text-muted-foreground">{richiesta.client.email}</p>
+
                 {richiesta.client.phoneNumber && (
                   <p className="text-muted-foreground">{richiesta.client.phoneNumber}</p>
                 )}
+
                 {(richiesta.contactName ?? richiesta.contactPhone) && (
                   <div className="mt-2 border-t border-border pt-2">
                     <p className="mb-1 text-xs text-muted-foreground">Contatto fornito</p>
+
                     {richiesta.contactName && (
                       <p className="text-foreground">
                         {richiesta.contactName} {richiesta.contactSurname ?? ''}
                       </p>
                     )}
+
                     {richiesta.contactPhone && (
                       <p className="text-muted-foreground">{richiesta.contactPhone}</p>
                     )}
+
                     {richiesta.contactEmail && (
                       <p className="text-muted-foreground">{richiesta.contactEmail}</p>
                     )}
