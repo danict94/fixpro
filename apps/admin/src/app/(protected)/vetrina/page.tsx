@@ -13,10 +13,14 @@ type ShowcasePlanTier = 'BASE' | 'PLUS' | 'PRO'
 type ShowcasePlan = {
   id: string
   tier: ShowcasePlanTier
-  name?: string
-  description?: string | null
-  priceCents?: number
-  active?: boolean
+  name: string
+  description: string | null
+  monthlyPriceCents: number
+  yearlyPriceCents: number | null
+  discountPercent: number
+  freeContactsPerMonth: number
+  overQuotaDiscountPercent: number
+  active: boolean
 }
 
 type ShowcaseSubscriptionStatus = 'ACTIVE' | 'EXPIRED' | 'CANCELLED'
