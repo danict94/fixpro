@@ -18,14 +18,14 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  // 🔒 PROTEZIONE GLOBALE (TEMP)
+  // 🔒 PROTEZIONE GLOBALE (TEMP — rimuovere dopo upgrade sito)
   const isProtected = process.env.SITE_PROTECTED === 'true'
   const USER = process.env.SITE_USER
   const PASS = process.env.SITE_PASSWORD
 
   const PUBLIC_PATHS = [
-    '/api',
-    '/_next',
+    '/api',            // webhook, tRPC
+    '/_next',          // assets Next.js
     '/favicon.ico',
   ]
 
@@ -41,7 +41,7 @@ export async function middleware(req: NextRequest) {
       const [user, pwd] = atob(authValue).split(':')
 
       if (user === USER && pwd === PASS) {
-        // passa alla logica sotto
+        // ✔ accesso consentito → continua
       } else {
         return new NextResponse('Auth required', {
           status: 401,
@@ -59,8 +59,8 @@ export async function middleware(req: NextRequest) {
       })
     }
   }
-    // 👇 LA TUA LOGICA ESISTENTE (NON TOCCATA)
-  
+
+  // 👇 LOGICA ESISTENTE (NON TOCCATA)
   const isPrivateClientRoute = pathname.startsWith('/area-cliente')
   const isPrivateCompanyRoute = pathname.startsWith('/area-impresa')
 
@@ -87,7 +87,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/area-cliente/:path*',
-    '/area-impresa/:path*',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
