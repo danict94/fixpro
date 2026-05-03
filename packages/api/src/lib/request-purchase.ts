@@ -170,7 +170,7 @@ async function purchaseRequestWithCreditsTx(
   let effectiveCost = baseCreditCost
   let discountPercent = 0
   let discountReason: string | null = null
-  let planSnapshot: Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput = Prisma.DbNull
+  let planSnapshot: unknown = Prisma.DbNull
 
   if (sourceType === 'SHOWCASE_PROFILE') {
     const sub = await tx.showcaseSubscription.findUnique({
@@ -247,7 +247,7 @@ async function purchaseRequestWithCreditsTx(
       finalCreditCost: effectiveCost,
       discountPercent,
       discountReason: safeDiscountReason,
-      planSnapshot,
+      planSnapshot: planSnapshot as never,
       pricingContext: {
         sourceType,
         isDirectRequest: sourceType === 'SHOWCASE_PROFILE',
@@ -267,7 +267,7 @@ export async function purchaseRequestWithCredits({
     await expireShowcaseSubscriptions(db, { companyId })
 
     const result = await db.$transaction(
-      (tx) => purchaseRequestWithCreditsTx(tx, { companyId, requestId }),
+      (tx: Prisma.TransactionClient) => purchaseRequestWithCreditsTx(tx, { companyId, requestId }),
       {
         maxWait: 3_000,
         timeout: 8_000,
@@ -275,7 +275,7 @@ export async function purchaseRequestWithCredits({
     )
 
     return loadPurchasedRequestForCompanyView(db, result.requestId)
-  } catch (error) {
+  } catch (error: unknown) {
     const creditError = toCreditError(error)
     if (creditError) throw creditError
 
