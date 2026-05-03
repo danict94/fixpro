@@ -1,22 +1,22 @@
 import Link from 'next/link'
 import {
-  Search,
-  CheckCircle,
-  XCircle,
   AlertCircle,
-  Image as ImageIcon,
-  Zap,
-  Sparkles,
-  Ruler,
   Bath,
+  CheckCircle,
+  Image as ImageIcon,
   Layers3,
+  Ruler,
+  Search,
+  Sparkles,
+  XCircle,
+  Zap,
 } from 'lucide-react'
 import {
-  parseRequestDescription,
-  isPriorityInterventoName,
-  isSurfaceMetaItem,
-  isQuantityMetaItem,
   isBathroomContext,
+  isPriorityInterventoName,
+  isQuantityMetaItem,
+  isSurfaceMetaItem,
+  parseRequestDescription,
 } from '@fixpro/shared'
 import { api } from '@/lib/trpc/server'
 import { Badge, Card, CardContent } from '@fixpro/ui'
@@ -32,7 +32,60 @@ const STATUS_CONFIG = {
   EXPIRED: { label: 'Scaduta', variant: 'secondary' },
 } as const
 
-const URGENCY_CONFIG: Record<string, { label: string; className: string }> = {
+type RequestStatus = keyof typeof STATUS_CONFIG
+
+type RequestUrgency =
+  | 'WITHIN_1_MONTH'
+  | 'WITHIN_3_MONTHS'
+  | 'WITHIN_6_MONTHS'
+  | 'NO_PREFERENCE'
+
+type RequestIntention = 'YES' | 'MAYBE' | 'INFO_ONLY'
+
+type ParsedMetaItem = {
+  label: string
+  value: string
+}
+
+type AdminIntervento = {
+  id: string
+  nome: string
+}
+
+type AdminRequestListItem = {
+  id: string
+  title: string
+  description: string | null
+  status: RequestStatus
+  urgency: RequestUrgency | null
+  intention: RequestIntention | null
+  interventoId: string | null
+  hasImages: boolean
+  city: string | null
+  province: string | null
+  createdAt: Date | string
+  creditCost: number | null
+  categoria: {
+    nome: string
+    settore: {
+      nome: string
+    }
+  }
+  client: {
+    name: string
+    emailVerified: boolean
+    phoneNumberVerified: boolean
+  }
+  targetCompany: {
+    ragioneSociale: string
+  } | null
+  _count: {
+    purchases: number
+    rescues: number
+  }
+}
+
+const URGENCY_CONFIG: Record<RequestUrgency, { label: string; className: string }> = {
   WITHIN_1_MONTH: {
     label: 'Urgente',
     className: 'border border-destructive/20 bg-destructive/10 text-destructive',
@@ -51,7 +104,7 @@ const URGENCY_CONFIG: Record<string, { label: string; className: string }> = {
   },
 }
 
-const INTENTION_CONFIG: Record<string, { label: string; className: string }> = {
+const INTENTION_CONFIG: Record<RequestIntention, { label: string; className: string }> = {
   YES: {
     label: 'Pronto a partire',
     className: 'border border-success/20 bg-success/10 text-success',
@@ -90,7 +143,19 @@ interface Props {
   }>
 }
 
-function renderMetaBadge(item: { label: string; value: string }, interventoNome: string | null) {
+function isRequestStatus(value: string | undefined): value is RequestStatus {
+  return ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'FULFILLED', 'EXPIRED'].includes(
+    value ?? '',
+  )
+}
+
+function isRequestUrgency(value: string | undefined): value is RequestUrgency {
+  return ['WITHIN_1_MONTH', 'WITHIN_3_MONTHS', 'WITHIN_6_MONTHS', 'NO_PREFERENCE'].includes(
+    value ?? '',
+  )
+}
+
+function renderMetaBadge(item: ParsedMetaItem, interventoNome: string | null) {
   const Icon = isSurfaceMetaItem(item)
     ? Ruler
     : isQuantityMetaItem(item) && isBathroomContext(`${interventoNome ?? ''} ${item.value}`)
@@ -111,19 +176,10 @@ function renderMetaBadge(item: { label: string; value: string }, interventoNome:
 export default async function RichiestePage({ searchParams }: Props) {
   const params = await searchParams
 
-  const validStatus = ['DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'FULFILLED', 'EXPIRED'].includes(
-    params.status ?? '',
-  )
-    ? (params.status as 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'FULFILLED' | 'EXPIRED')
-    : undefined
+  const validStatus = isRequestStatus(params.status) ? params.status : undefined
+  const validUrgency = isRequestUrgency(params.urgency) ? params.urgency : undefined
 
-  const validUrgency = ['WITHIN_1_MONTH', 'WITHIN_3_MONTHS', 'WITHIN_6_MONTHS', 'NO_PREFERENCE'].includes(
-    params.urgency ?? '',
-  )
-    ? (params.urgency as 'WITHIN_1_MONTH' | 'WITHIN_3_MONTHS' | 'WITHIN_6_MONTHS' | 'NO_PREFERENCE')
-    : undefined
-
-  const [richieste, interventi] = await Promise.all([
+  const [richiesteResult, interventiResult] = await Promise.all([
     api.admin.requests.list({
       status: validStatus,
       search: params.search || undefined,
@@ -133,7 +189,12 @@ export default async function RichiestePage({ searchParams }: Props) {
     api.taxonomy.getInterventi(),
   ])
 
-  const interventiById = new Map(interventi.map((intervento) => [intervento.id, intervento.nome]))
+  const richieste = richiesteResult as AdminRequestListItem[]
+  const interventi = interventiResult as AdminIntervento[]
+
+  const interventiById = new Map<string, string>(
+    interventi.map((intervento: AdminIntervento) => [intervento.id, intervento.nome]),
+  )
 
   function buildHref(overrides: Record<string, string | undefined>) {
     const merged = {
@@ -173,6 +234,7 @@ export default async function RichiestePage({ searchParams }: Props) {
             <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
               {richieste.length} {richieste.length === 1 ? 'richiesta' : 'richieste'}
             </Badge>
+
             {params.search && (
               <Badge variant="outline" className="rounded-full px-3 py-1 text-xs">
                 Ricerca attiva
@@ -242,6 +304,7 @@ export default async function RichiestePage({ searchParams }: Props) {
             <div className="flex flex-wrap gap-2">
               {STATUS_TABS.map((tab) => {
                 const isActive = validStatus === tab.value
+
                 return (
                   <Link
                     key={tab.label}
@@ -263,8 +326,10 @@ export default async function RichiestePage({ searchParams }: Props) {
             <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Urgenza
             </p>
+
             {URGENCY_TABS.map((tab) => {
               const isActive = validUrgency === tab.value
+
               return (
                 <Link
                   key={tab.label}
@@ -294,17 +359,15 @@ export default async function RichiestePage({ searchParams }: Props) {
         </Card>
       ) : (
         <section className="space-y-3">
-          {richieste.map((r) => {
-            const cfg = STATUS_CONFIG[r.status as keyof typeof STATUS_CONFIG] ?? {
-              label: r.status,
-              variant: 'secondary' as const,
-            }
+          {richieste.map((r: AdminRequestListItem) => {
+            const cfg = STATUS_CONFIG[r.status]
             const urgencyCfg = r.urgency ? URGENCY_CONFIG[r.urgency] : undefined
             const intentionCfg = r.intention ? INTENTION_CONFIG[r.intention] : undefined
             const interventoNome = r.interventoId
               ? interventiById.get(r.interventoId) ?? null
               : null
-            const parsedDescription = parseRequestDescription(r.description)
+            const parsedDescription = parseRequestDescription(r.description ?? '')
+            const parsedMeta = parsedDescription.meta as ParsedMetaItem[]
             const descriptionText = parsedDescription.description || 'Descrizione non specificata.'
             const isPriorityRequest = isPriorityInterventoName(interventoNome ?? r.title)
             const hasShortDesc = descriptionText.length < 50
@@ -336,7 +399,7 @@ export default async function RichiestePage({ searchParams }: Props) {
 
                           {parsedDescription.hasMeta ? (
                             <div className="flex flex-wrap gap-2">
-                              {parsedDescription.meta.map((item) =>
+                              {parsedMeta.map((item: ParsedMetaItem) =>
                                 renderMetaBadge(item, interventoNome),
                               )}
                             </div>
@@ -359,7 +422,8 @@ export default async function RichiestePage({ searchParams }: Props) {
                         </div>
 
                         <p className="text-xs leading-5 text-muted-foreground">
-                          {[r.city, r.province].filter(Boolean).join(', ') || 'Localita non specificata'}
+                          {[r.city, r.province].filter(Boolean).join(', ') ||
+                            'Localita non specificata'}
                           {' · '}
                           {r.client.name}
                           {' · '}
@@ -381,7 +445,10 @@ export default async function RichiestePage({ searchParams }: Props) {
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1 text-muted-foreground">
-                              <ImageIcon className="h-3 w-3 stroke-muted-foreground" strokeWidth={2} />
+                              <ImageIcon
+                                className="h-3 w-3 stroke-muted-foreground"
+                                strokeWidth={2}
+                              />
                               Nessuna foto
                             </span>
                           )}
@@ -392,7 +459,9 @@ export default async function RichiestePage({ searchParams }: Props) {
                             className={`inline-flex items-center gap-0.5 ${
                               r.client.emailVerified ? 'text-success' : 'text-muted-foreground'
                             }`}
-                            title={r.client.emailVerified ? 'Email verificata' : 'Email non verificata'}
+                            title={
+                              r.client.emailVerified ? 'Email verificata' : 'Email non verificata'
+                            }
                           >
                             {r.client.emailVerified ? (
                               <CheckCircle className="h-3 w-3 stroke-success" strokeWidth={2} />
@@ -415,7 +484,10 @@ export default async function RichiestePage({ searchParams }: Props) {
                             {r.client.phoneNumberVerified ? (
                               <CheckCircle className="h-3 w-3 stroke-success" strokeWidth={2} />
                             ) : (
-                              <AlertCircle className="h-3 w-3 stroke-destructive" strokeWidth={2} />
+                              <AlertCircle
+                                className="h-3 w-3 stroke-destructive"
+                                strokeWidth={2}
+                              />
                             )}
                             tel
                           </span>
@@ -433,13 +505,7 @@ export default async function RichiestePage({ searchParams }: Props) {
                       </div>
 
                       <div className="flex shrink-0 flex-wrap items-start gap-2 lg:max-w-[240px] lg:flex-col lg:items-end">
-                        <Badge
-                          variant={
-                            cfg.variant as 'secondary' | 'success' | 'warning' | 'destructive'
-                          }
-                        >
-                          {cfg.label}
-                        </Badge>
+                        <Badge variant={cfg.variant}>{cfg.label}</Badge>
 
                         {urgencyCfg && (
                           <span
