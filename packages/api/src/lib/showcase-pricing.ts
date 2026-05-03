@@ -4,7 +4,7 @@
  * NON replicare questa logica in controller, componenti o job.
  */
 
-import type { ShowcasePlanTier } from '@fixpro/db'
+export type ShowcasePlanTier = 'BASE' | 'PLUS' | 'PRO'
 
 /** Risultato del calcolo pricing vetrina */
 export interface ShowcasePricingResult {
