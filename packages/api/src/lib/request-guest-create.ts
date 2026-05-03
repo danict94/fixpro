@@ -1,11 +1,12 @@
 import { TRPCError } from '@trpc/server'
-import type { Prisma,PrismaClient } from '@fixpro/db'
+import type { Prisma, PrismaClient } from '@fixpro/db'
 import { buildAndCreateRequest } from './request-create'
 import {
   normalizePhoneToE164,
   verifyGuestOtpSms,
   type GuestOtpPayload,
 } from './request-guest-otp'
+
 type SendMagicLink = (email: string, callbackURL?: string) => Promise<void>
 
 type CreateRequestFromGuestInput = {
@@ -128,10 +129,15 @@ export async function createRequestFromGuest({
 
     try {
       await sendMagicLink(email, '/area-cliente/richieste')
-    } catch (emailErr) {
-      await db.serviceRequest.delete({ where: { id: request.id } }).catch((compErr) => {
-        console.error('[request-guest-create] Existing user request compensation failed:', compErr)
-      })
+    } catch (emailErr: unknown) {
+      await db.serviceRequest
+        .delete({ where: { id: request.id } })
+        .catch((compErr: unknown) => {
+          console.error(
+            '[request-guest-create] Existing user request compensation failed:',
+            compErr,
+          )
+        })
 
       console.error('[request-guest-create] sendMagicLink failed:', emailErr)
 
@@ -149,7 +155,7 @@ export async function createRequestFromGuest({
     }
   }
 
-  const created = await db.$transaction(async (tx) => {
+  const created = await db.$transaction(async (tx: Prisma.TransactionClient) => {
     const user = await tx.user.create({
       data: {
         name: `${input.name.trim()} ${input.surname.trim()}`,
@@ -180,13 +186,13 @@ export async function createRequestFromGuest({
 
   try {
     await sendMagicLink(email, '/area-cliente/richieste')
-  } catch (emailErr) {
+  } catch (emailErr: unknown) {
     await db
-      .$transaction(async (tx) => {
+      .$transaction(async (tx: Prisma.TransactionClient) => {
         await tx.serviceRequest.delete({ where: { id: created.requestId } })
         await tx.user.delete({ where: { id: created.userId } })
       })
-      .catch((compErr) => {
+      .catch((compErr: unknown) => {
         console.error('[request-guest-create] Compensation failed:', compErr)
       })
 
