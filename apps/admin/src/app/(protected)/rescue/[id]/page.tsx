@@ -1,33 +1,116 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, MapPin, Phone, Mail, User, AlertTriangle, Zap, CreditCard, BadgeCheck } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  BadgeCheck,
+  CreditCard,
+  Mail,
+  MapPin,
+  Phone,
+  User,
+  Zap,
+} from 'lucide-react'
 import { api } from '@/lib/trpc/server'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@fixpro/ui'
 import { RescueActions } from './_components/rescue-actions'
 
 const RESCUE_STATUS_CONFIG = {
-  OPEN:         { label: 'Aperto',       variant: 'warning' },
+  OPEN: { label: 'Aperto', variant: 'warning' },
   UNDER_REVIEW: { label: 'In revisione', variant: 'secondary' },
-  APPROVED:     { label: 'Approvato',    variant: 'success' },
-  REJECTED:     { label: 'Rifiutato',    variant: 'destructive' },
-  CLOSED:       { label: 'Chiuso',       variant: 'secondary' },
+  APPROVED: { label: 'Approvato', variant: 'success' },
+  REJECTED: { label: 'Rifiutato', variant: 'destructive' },
+  CLOSED: { label: 'Chiuso', variant: 'secondary' },
 } as const
 
+type RescueStatus = keyof typeof RESCUE_STATUS_CONFIG
+type PaymentMethod = 'CREDITS' | 'ONE_TIME' | string
+
+type RescuePurchase = {
+  paymentMethod: PaymentMethod
+  creditSpent: number
+  amountCents: number | null
+  purchasedAt: Date | string
+}
+
+type RescueAuditItem = {
+  id: string
+  action: string
+  note: string | null
+  createdAt: Date | string
+}
+
+type RescueDetail = {
+  id: string
+  status: RescueStatus
+  reason: string
+  adminNote: string | null
+  createdAt: Date | string
+  resolvedAt: Date | string | null
+  rescuesThisMonth: number
+  purchase: RescuePurchase | null
+  audit: RescueAuditItem[]
+  company: {
+    id: string
+    ragioneSociale: string
+    user: {
+      email: string
+    }
+    creditBalance: {
+      total: number
+    } | null
+  }
+  request: {
+    id: string
+    title: string
+    description: string | null
+    city: string | null
+    province: string | null
+    address: string | null
+    urgency: string | null
+    propertyType: string | null
+    hasImages: boolean
+    intention: string | null
+    contactName: string | null
+    contactSurname: string | null
+    contactPhone: string | null
+    contactEmail: string | null
+    categoria: {
+      nome: string
+      settore: {
+        nome: string
+      }
+    }
+    servizio: {
+      nome: string
+    } | null
+    client: {
+      name: string
+      email: string
+      phoneNumber: string | null
+    }
+  }
+}
+
 const URGENCY_LABEL: Record<string, string> = {
-  WITHIN_1_MONTH:  'Entro 1 mese',
+  WITHIN_1_MONTH: 'Entro 1 mese',
   WITHIN_3_MONTHS: 'Entro 3 mesi',
   WITHIN_6_MONTHS: 'Entro 6 mesi',
-  NO_PREFERENCE:   'Nessuna preferenza',
+  NO_PREFERENCE: 'Nessuna preferenza',
 }
 
 const INTENTION_LABEL: Record<string, string> = {
-  YES:        'Pronto a procedere',
-  MAYBE:      'Forse',
-  INFO_ONLY:  'Solo informazioni',
+  YES: 'Pronto a procedere',
+  MAYBE: 'Forse',
+  INFO_ONLY: 'Solo informazioni',
 }
 
 function formatDate(d: Date | string) {
-  return new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
+  return new Date(d).toLocaleDateString('it-IT', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
 }
 
 interface Props {
@@ -37,9 +120,10 @@ interface Props {
 export default async function RescueDetailPage({ params }: Props) {
   const { id } = await params
 
-  let rescue: Awaited<ReturnType<typeof api.admin.rescue.get>>
+  let rescue: RescueDetail
+
   try {
-    rescue = await api.admin.rescue.get({ id })
+    rescue = (await api.admin.rescue.get({ id })) as RescueDetail
   } catch {
     notFound()
   }
@@ -50,42 +134,44 @@ export default async function RescueDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-
       <Link
         href="/rescue"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4 stroke-muted-foreground" strokeWidth={1.8} />
         Tutti i rescue
       </Link>
 
-      <div className="flex items-start gap-3 flex-wrap">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl font-bold text-foreground">
             Rescue — {rescue.company.ragioneSociale}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{req.title}</p>
         </div>
-        <Badge variant={cfg.variant as 'secondary' | 'success' | 'warning' | 'destructive'}>
-          {cfg.label}
-        </Badge>
+
+        <Badge variant={cfg.variant}>{cfg.label}</Badge>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-
         {/* ── Colonna principale ── */}
-        <div className="lg:col-span-2 space-y-5">
-
+        <div className="space-y-5 lg:col-span-2">
           {/* Motivazione impresa */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Motivazione dell&apos;impresa</CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-3">
-              <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{rescue.reason}</p>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {rescue.reason}
+              </p>
+
               {rescue.adminNote && (
                 <div className="rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Nota admin</p>
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Nota admin
+                  </p>
                   <p className="text-sm text-foreground">{rescue.adminNote}</p>
                 </div>
               )}
@@ -98,9 +184,12 @@ export default async function RescueDetailPage({ params }: Props) {
               <CardTitle className="flex items-center gap-2 text-base">
                 <Phone className="h-4 w-4 stroke-warning" strokeWidth={2} />
                 Contatti cliente
-                <Badge variant="outline" className="ml-auto text-xs font-normal">Riservati — solo admin</Badge>
+                <Badge variant="outline" className="ml-auto text-xs font-normal">
+                  Riservati — solo admin
+                </Badge>
               </CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-2.5">
               {(req.contactName || req.contactSurname) && (
                 <div className="flex items-center gap-2.5 text-sm">
@@ -110,6 +199,7 @@ export default async function RescueDetailPage({ params }: Props) {
                   </span>
                 </div>
               )}
+
               {req.contactPhone && (
                 <div className="flex items-center gap-2.5 text-sm">
                   <Phone className="h-4 w-4 shrink-0 stroke-muted-foreground" strokeWidth={1.9} />
@@ -118,6 +208,7 @@ export default async function RescueDetailPage({ params }: Props) {
                   </a>
                 </div>
               )}
+
               {req.contactEmail && (
                 <div className="flex items-center gap-2.5 text-sm">
                   <Mail className="h-4 w-4 shrink-0 stroke-muted-foreground" strokeWidth={1.9} />
@@ -126,16 +217,17 @@ export default async function RescueDetailPage({ params }: Props) {
                   </a>
                 </div>
               )}
+
               {/* Fallback dati account cliente */}
               {!req.contactPhone && !req.contactEmail && (
                 <div className="space-y-1 text-sm">
-                  <p className="text-foreground">{rescue.request.client.name}</p>
-                  <a href={`mailto:${rescue.request.client.email}`} className="text-primary hover:underline">
-                    {rescue.request.client.email}
+                  <p className="text-foreground">{req.client.name}</p>
+                  <a href={`mailto:${req.client.email}`} className="text-primary hover:underline">
+                    {req.client.email}
                   </a>
-                  {rescue.request.client.phoneNumber && (
-                    <a href={`tel:${rescue.request.client.phoneNumber}`} className="block text-primary hover:underline">
-                      {rescue.request.client.phoneNumber}
+                  {req.client.phoneNumber && (
+                    <a href={`tel:${req.client.phoneNumber}`} className="block text-primary hover:underline">
+                      {req.client.phoneNumber}
                     </a>
                   )}
                 </div>
@@ -148,6 +240,7 @@ export default async function RescueDetailPage({ params }: Props) {
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Richiesta originale</CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 {req.categoria.settore.nome} → {req.categoria.nome}
@@ -167,14 +260,19 @@ export default async function RescueDetailPage({ params }: Props) {
                     {URGENCY_LABEL[req.urgency] ?? req.urgency}
                   </Badge>
                 )}
+
                 {req.propertyType && (
                   <Badge variant="outline" className="text-xs">
                     {req.propertyType === 'RESIDENTIAL' ? 'Residenziale' : 'Commerciale'}
                   </Badge>
                 )}
+
                 {req.hasImages && (
-                  <Badge variant="outline" className="text-xs">Con foto</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    Con foto
+                  </Badge>
                 )}
+
                 {req.intention && (
                   <Badge variant="outline" className="text-xs">
                     {INTENTION_LABEL[req.intention] ?? req.intention}
@@ -183,15 +281,16 @@ export default async function RescueDetailPage({ params }: Props) {
               </div>
 
               <div>
-                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Descrizione</p>
-                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">{req.description}</p>
+                <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Descrizione
+                </p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                  {req.description ?? '—'}
+                </p>
               </div>
 
               <div className="pt-1">
-                <Link
-                  href={`/richieste/${req.id}`}
-                  className="text-xs text-primary hover:underline"
-                >
+                <Link href={`/richieste/${req.id}`} className="text-xs text-primary hover:underline">
                   Apri richiesta originale →
                 </Link>
               </div>
@@ -204,10 +303,12 @@ export default async function RescueDetailPage({ params }: Props) {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Storico azioni</CardTitle>
               </CardHeader>
+
               <CardContent>
                 <div className="relative space-y-0 pl-4">
-                  <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border" />
-                  {rescue.audit.map((a) => (
+                  <div className="absolute bottom-2 left-1.5 top-2 w-px bg-border" />
+
+                  {rescue.audit.map((a: RescueAuditItem) => (
                     <div key={a.id} className="relative flex items-start gap-3 pb-4 text-sm">
                       <div className="absolute -left-1 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-border bg-background" />
                       <div className="min-w-0 pl-2">
@@ -215,8 +316,11 @@ export default async function RescueDetailPage({ params }: Props) {
                         {a.note && <span className="text-muted-foreground"> — {a.note}</span>}
                         <p className="mt-0.5 text-xs text-muted-foreground">
                           {new Date(a.createdAt).toLocaleDateString('it-IT', {
-                            day: '2-digit', month: 'short', year: 'numeric',
-                            hour: '2-digit', minute: '2-digit',
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
                           })}
                         </p>
                       </div>
@@ -226,35 +330,39 @@ export default async function RescueDetailPage({ params }: Props) {
               </CardContent>
             </Card>
           )}
-
         </div>
 
         {/* ── Colonna destra (sidebar) ── */}
         <div className="space-y-4">
-
           {/* Impresa */}
           <Card>
-            <CardContent className="p-5 space-y-3">
+            <CardContent className="space-y-3 p-5">
               <p className="font-semibold text-foreground">Impresa</p>
+
               <div className="space-y-1.5 text-sm">
-                <Link
-                  href={`/imprese/${rescue.company.id}`}
-                  className="font-medium text-primary hover:underline"
-                >
+                <Link href={`/imprese/${rescue.company.id}`} className="font-medium text-primary hover:underline">
                   {rescue.company.ragioneSociale}
                 </Link>
+
                 <p className="text-muted-foreground">{rescue.company.user.email}</p>
+
                 <p className="text-muted-foreground">
-                  Crediti attuali: <span className="font-medium text-foreground">{rescue.company.creditBalance?.total ?? 0}</span>
+                  Crediti attuali:{' '}
+                  <span className="font-medium text-foreground">
+                    {rescue.company.creditBalance?.total ?? 0}
+                  </span>
                 </p>
               </div>
+
               {/* Anti-abuso */}
               {rescuesThisMonth > 0 && (
-                <div className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs ${
-                  rescuesThisMonth >= 3
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-warning/10 text-warning'
-                }`}>
+                <div
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs ${
+                    rescuesThisMonth >= 3
+                      ? 'bg-destructive/10 text-destructive'
+                      : 'bg-warning/10 text-warning'
+                  }`}
+                >
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
                   {rescuesThisMonth} rescue negli ultimi 30 gg
                 </div>
@@ -265,18 +373,27 @@ export default async function RescueDetailPage({ params }: Props) {
           {/* Acquisto */}
           {purchase && (
             <Card>
-              <CardContent className="p-5 space-y-3">
+              <CardContent className="space-y-3 p-5">
                 <p className="font-semibold text-foreground">Acquisto originale</p>
+
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Metodo</span>
                     <span className="flex items-center gap-1 font-medium text-foreground">
-                      {purchase.paymentMethod === 'CREDITS'
-                        ? <><Zap className="h-3.5 w-3.5 stroke-warning" strokeWidth={2} />{purchase.creditSpent} crediti</>
-                        : <><CreditCard className="h-3.5 w-3.5 stroke-info" strokeWidth={2} />€{((purchase.amountCents ?? 0) / 100).toFixed(2)}</>
-                      }
+                      {purchase.paymentMethod === 'CREDITS' ? (
+                        <>
+                          <Zap className="h-3.5 w-3.5 stroke-warning" strokeWidth={2} />
+                          {purchase.creditSpent} crediti
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-3.5 w-3.5 stroke-info" strokeWidth={2} />€
+                          {((purchase.amountCents ?? 0) / 100).toFixed(2)}
+                        </>
+                      )}
                     </span>
                   </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Acquistato il</span>
                     <span className="text-foreground">{formatDate(purchase.purchasedAt)}</span>
@@ -284,35 +401,46 @@ export default async function RescueDetailPage({ params }: Props) {
                 </div>
 
                 {/* Preview rimborso */}
-                {rescue.status !== 'APPROVED' && rescue.status !== 'REJECTED' && rescue.status !== 'CLOSED' && (
-                  <div className={`rounded-md px-3 py-2.5 text-xs ${
-                    purchase.paymentMethod === 'CREDITS'
-                      ? 'bg-success/10 text-success'
-                      : 'bg-warning/10 text-warning'
-                  }`}>
-                    {purchase.paymentMethod === 'CREDITS' && purchase.creditSpent > 0 && (
-                      <p className="flex items-center gap-1.5">
-                        <BadgeCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-                        Approvando verranno rimborsati <strong>{purchase.creditSpent} crediti</strong> (scad. +1 anno)
-                      </p>
-                    )}
-                    {purchase.paymentMethod === 'ONE_TIME' && (
-                      <p>Pagamento one-time: il rimborso Stripe va gestito manualmente dal pannello Stripe.</p>
-                    )}
-                  </div>
-                )}
+                {rescue.status !== 'APPROVED' &&
+                  rescue.status !== 'REJECTED' &&
+                  rescue.status !== 'CLOSED' && (
+                    <div
+                      className={`rounded-md px-3 py-2.5 text-xs ${
+                        purchase.paymentMethod === 'CREDITS'
+                          ? 'bg-success/10 text-success'
+                          : 'bg-warning/10 text-warning'
+                      }`}
+                    >
+                      {purchase.paymentMethod === 'CREDITS' && purchase.creditSpent > 0 && (
+                        <p className="flex items-center gap-1.5">
+                          <BadgeCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+                          Approvando verranno rimborsati{' '}
+                          <strong>{purchase.creditSpent} crediti</strong> (scad. +1 anno)
+                        </p>
+                      )}
+
+                      {purchase.paymentMethod === 'ONE_TIME' && (
+                        <p>
+                          Pagamento one-time: il rimborso Stripe va gestito manualmente dal
+                          pannello Stripe.
+                        </p>
+                      )}
+                    </div>
+                  )}
               </CardContent>
             </Card>
           )}
 
           {/* Info rescue */}
           <Card>
-            <CardContent className="p-5 space-y-2 text-sm">
+            <CardContent className="space-y-2 p-5 text-sm">
               <p className="font-semibold text-foreground">Info rescue</p>
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Aperto il</span>
                 <span className="text-foreground">{formatDate(rescue.createdAt)}</span>
               </div>
+
               {rescue.resolvedAt && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Risolto il</span>
@@ -329,7 +457,6 @@ export default async function RescueDetailPage({ params }: Props) {
             creditSpent={purchase?.creditSpent ?? 0}
             paymentMethod={purchase?.paymentMethod ?? 'CREDITS'}
           />
-
         </div>
       </div>
     </div>
