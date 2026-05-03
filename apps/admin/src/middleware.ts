@@ -1,22 +1,28 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
-// Cookie name usato da better-auth (default)
-const SESSION_COOKIE = 'better-auth.session_token'
+const BETTER_AUTH_SESSION_COOKIE_NAMES = [
+  'better-auth.session_token',
+  '__Secure-better-auth.session_token',
+  'better-auth.session-token',
+  '__Secure-better-auth.session-token',
+]
+
+function hasBetterAuthSessionCookie(request: NextRequest) {
+  return BETTER_AUTH_SESSION_COOKIE_NAMES.some((cookieName) =>
+    request.cookies.has(cookieName),
+  )
+}
 
 /**
  * Middleware di protezione del pannello admin.
  *
- * Edge-safe: controlla solo la presenza del cookie di sessione.
+ * Edge-safe: controlla solo la presenza di un cookie sessione Better Auth.
  * Il gate isAdmin completo viene eseguito nel Server Component
  * (protected)/layout.tsx che ha accesso al Node runtime e al DB.
- *
- * Nota: Rate limit per login viene gestito nella logica di auth via
- * tRPC admin-users router e middleware node-side.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Escludi login, reset password e route auth dal gate
   if (
     pathname.startsWith('/accedi') ||
     pathname.startsWith('/reimposta-password') ||
@@ -25,7 +31,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const hasSession = request.cookies.has(SESSION_COOKIE)
+  const hasSession = hasBetterAuthSessionCookie(request)
+
   if (!hasSession) {
     return NextResponse.redirect(new URL('/accedi', request.url))
   }
