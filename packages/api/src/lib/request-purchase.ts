@@ -170,7 +170,7 @@ async function purchaseRequestWithCreditsTx(
   let effectiveCost = baseCreditCost
   let discountPercent = 0
   let discountReason: string | null = null
-  let planSnapshot: unknown = Prisma.DbNull
+  let planSnapshot: unknown = null
 
   if (sourceType === 'SHOWCASE_PROFILE') {
     const sub = await tx.showcaseSubscription.findUnique({
@@ -221,7 +221,7 @@ async function purchaseRequestWithCreditsTx(
       effectiveCost = pricing.credits.finalCredits
       discountPercent = pricing.discountPercent
       discountReason = pricing.discountReason
-      planSnapshot = pricing.planSnapshot ?? Prisma.DbNull
+      planSnapshot = pricing.planSnapshot ?? null
     }
   }
 
