@@ -9,6 +9,22 @@ import { auth, requestAdminPasswordReset } from '@/lib/auth'
 
 type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | null
 
+type BetterAuthSessionUser = {
+  id: string
+  email: string
+  name?: string | null
+  emailVerified?: boolean
+  adminRole?: AdminRole
+  phoneNumberVerified?: boolean
+}
+
+type BetterAuthSession = {
+  user: BetterAuthSessionUser
+  session?: {
+    createdAt?: Date
+  }
+}
+
 type WhatsAppNotificationPayload = Parameters<typeof sendWhatsAppNotification>[0]
 
 const handler = (req: Request) =>
@@ -17,32 +33,26 @@ const handler = (req: Request) =>
     req,
     router: appRouter,
     createContext: async () => {
-      const session = await auth.api.getSession({ headers: req.headers })
+      const rawSession = await auth.api.getSession({ headers: req.headers })
+      const session = rawSession as BetterAuthSession | null
 
-      const sessionUser = session?.user as
-        | (typeof session.user & {
-            adminRole?: AdminRole
-            phoneNumberVerified?: boolean
-          })
-        | undefined
-
+      const sessionUser = session?.user
       const adminRole = sessionUser?.adminRole ?? null
 
       return {
         db: prisma,
-        session: session
+        session: sessionUser
           ? {
               user: {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.name,
+                id: sessionUser.id,
+                email: sessionUser.email,
+                name: sessionUser.name ?? '',
                 role: 'CLIENT' as const,
-                emailVerified: session.user.emailVerified ?? false,
-                phoneNumberVerified: sessionUser?.phoneNumberVerified ?? false,
+                emailVerified: sessionUser.emailVerified ?? false,
+                phoneNumberVerified: sessionUser.phoneNumberVerified ?? false,
                 adminRole,
               },
-              sessionCreatedAt:
-                (session as { session?: { createdAt?: Date } }).session?.createdAt ?? null,
+              sessionCreatedAt: session?.session?.createdAt ?? null,
             }
           : null,
         sendPasswordResetEmail: async (email: string, variant?: AdminEmailVariant) => {

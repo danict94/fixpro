@@ -1,46 +1,64 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import type { FormEvent } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, Crown, Zap, Sparkles, UserPlus } from 'lucide-react'
+import { Crown, Search, Sparkles, UserPlus, Zap } from 'lucide-react'
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@fixpro/ui'
 import { trpc } from '@/lib/trpc/client'
 
 type Tier = 'BASE' | 'PLUS' | 'PRO'
 
+type CompanySearchResult = {
+  id: string
+  ragioneSociale: string
+  city: string | null
+  province: string | null
+}
+
+type SelectedCompany = {
+  id: string
+  ragioneSociale: string
+  city: string | null
+}
+
 const TIER_OPTIONS: { value: Tier; label: string; icon: typeof Sparkles }[] = [
-  { value: 'BASE', label: 'Vetrina Base',  icon: Sparkles },
-  { value: 'PLUS', label: 'Vetrina Plus',  icon: Zap },
-  { value: 'PRO',  label: 'Vetrina Pro',   icon: Crown },
+  { value: 'BASE', label: 'Vetrina Base', icon: Sparkles },
+  { value: 'PLUS', label: 'Vetrina Plus', icon: Zap },
+  { value: 'PRO', label: 'Vetrina Pro', icon: Crown },
 ]
 
 export function AssignSubscriptionForm() {
   const router = useRouter()
 
-  const [search, setSearch]             = useState('')
-  const [selectedCompany, setSelectedCompany] = useState<{ id: string; ragioneSociale: string; city: string | null } | null>(null)
-  const [tier, setTier]                 = useState<Tier>('BASE')
-  const [months, setMonths]             = useState('1')
-  const [error, setError]               = useState<string | null>(null)
-  const [success, setSuccess]           = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedCompany, setSelectedCompany] = useState<SelectedCompany | null>(null)
+  const [tier, setTier] = useState<Tier>('BASE')
+  const [months, setMonths] = useState('1')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
-  const debounceRef                     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Ricerca imprese (debounced via input)
   const searchQuery = trpc.admin.companies.list.useQuery(
     { search: search.trim(), status: 'APPROVED' },
-    { enabled: search.trim().length >= 2 }
+    { enabled: search.trim().length >= 2 },
   )
 
   function handleSearchInput(val: string) {
     setSearch(val)
     setSelectedCompany(null)
     setShowDropdown(true)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
     debounceRef.current = setTimeout(() => {}, 300)
   }
 
-  function selectCompany(c: { id: string; ragioneSociale: string; city: string | null }) {
+  function selectCompany(c: SelectedCompany) {
     setSelectedCompany(c)
     setSearch(c.ragioneSociale)
     setShowDropdown(false)
@@ -60,40 +78,50 @@ export function AssignSubscriptionForm() {
     onError: (err) => setError(err.message),
   })
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!selectedCompany) { setError('Seleziona un\'impresa'); return }
+
+    if (!selectedCompany) {
+      setError("Seleziona un'impresa")
+      return
+    }
+
     assign.mutate({
       companyId: selectedCompany.id,
       tier,
-      months:    parseInt(months) || 1,
+      months: parseInt(months, 10) || 1,
     })
   }
 
-  const results = searchQuery.data?.slice(0, 8) ?? []
+  const results = (searchQuery.data?.slice(0, 8) ?? []) as CompanySearchResult[]
 
   return (
     <Card>
-      <CardHeader className="pb-3 border-b">
+      <CardHeader className="border-b pb-3">
         <div className="flex items-center gap-2">
           <UserPlus className="h-4 w-4 stroke-primary" strokeWidth={1.9} />
           <CardTitle className="text-sm font-medium text-foreground">
             Assegna subscription vetrina
           </CardTitle>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Assegna manualmente un piano vetrina a un&apos;impresa. Utile per trial, promozioni o attivazioni manuali.
+
+        <p className="mt-1 text-xs text-muted-foreground">
+          Assegna manualmente un piano vetrina a un&apos;impresa. Utile per trial, promozioni o
+          attivazioni manuali.
         </p>
       </CardHeader>
 
       <CardContent className="p-5">
         <form onSubmit={handleSubmit} className="space-y-4">
-
           {/* Ricerca impresa */}
-          <div className="space-y-1.5 relative">
+          <div className="relative space-y-1.5">
             <label className="text-xs font-medium text-foreground">Impresa</label>
+
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 stroke-muted-foreground" strokeWidth={1.9} />
+              <Search
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 stroke-muted-foreground"
+                strokeWidth={1.9}
+              />
               <input
                 type="text"
                 value={search}
@@ -102,27 +130,37 @@ export function AssignSubscriptionForm() {
                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                 placeholder="Cerca per ragione sociale…"
                 autoComplete="off"
-                className="w-full pl-9 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
 
             {/* Dropdown risultati */}
             {showDropdown && search.trim().length >= 2 && (
-              <div className="absolute z-10 w-full mt-1 rounded-xl border border-border bg-background shadow-lg overflow-hidden">
+              <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-border bg-background shadow-lg">
                 {searchQuery.isLoading ? (
                   <div className="px-4 py-3 text-sm text-muted-foreground">Ricerca…</div>
                 ) : results.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-muted-foreground">Nessuna impresa trovata</div>
+                  <div className="px-4 py-3 text-sm text-muted-foreground">
+                    Nessuna impresa trovata
+                  </div>
                 ) : (
-                  results.map((c) => (
+                  results.map((c: CompanySearchResult) => (
                     <button
                       key={c.id}
                       type="button"
-                      onMouseDown={() => selectCompany({ id: c.id, ragioneSociale: c.ragioneSociale, city: c.city })}
-                      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted transition-colors"
+                      onMouseDown={() =>
+                        selectCompany({
+                          id: c.id,
+                          ragioneSociale: c.ragioneSociale,
+                          city: c.city,
+                        })
+                      }
+                      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{c.ragioneSociale}</p>
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {c.ragioneSociale}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {[c.city, c.province].filter(Boolean).join(', ')}
                         </p>
@@ -143,6 +181,7 @@ export function AssignSubscriptionForm() {
           {/* Tier */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">Piano</label>
+
             <div className="grid grid-cols-3 gap-2">
               {TIER_OPTIONS.map(({ value, label, icon: Icon }) => (
                 <button
@@ -155,7 +194,12 @@ export function AssignSubscriptionForm() {
                       : 'border-border bg-background text-foreground hover:border-primary/50'
                   }`}
                 >
-                  <Icon className={`h-3.5 w-3.5 ${tier === value ? 'stroke-primary' : 'stroke-muted-foreground'}`} strokeWidth={1.9} />
+                  <Icon
+                    className={`h-3.5 w-3.5 ${
+                      tier === value ? 'stroke-primary' : 'stroke-muted-foreground'
+                    }`}
+                    strokeWidth={1.9}
+                  />
                   {label}
                 </button>
               ))}
@@ -165,21 +209,28 @@ export function AssignSubscriptionForm() {
           {/* Durata */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-foreground">Durata (mesi)</label>
+
             <select
               value={months}
               onChange={(e) => setMonths(e.target.value)}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               {[1, 2, 3, 6, 12, 24].map((m) => (
-                <option key={m} value={m}>{m} {m === 1 ? 'mese' : 'mesi'}</option>
+                <option key={m} value={m}>
+                  {m} {m === 1 ? 'mese' : 'mesi'}
+                </option>
               ))}
             </select>
           </div>
 
-          {error   && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           {success && <p className="text-sm text-success">Subscription assegnata con successo.</p>}
 
-          <Button type="submit" disabled={assign.isPending || !selectedCompany} className="gap-1.5 w-full sm:w-auto">
+          <Button
+            type="submit"
+            disabled={assign.isPending || !selectedCompany}
+            className="w-full gap-1.5 sm:w-auto"
+          >
             <UserPlus className="h-4 w-4" strokeWidth={1.9} />
             {assign.isPending ? 'Assegnazione…' : 'Assegna subscription'}
           </Button>
