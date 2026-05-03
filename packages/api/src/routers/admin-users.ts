@@ -19,11 +19,12 @@ function getPasswordResetSender(ctx: Context) {
       message: 'Password reset non disponibile in questo contesto',
     })
   }
+
   return ctx.sendPasswordResetEmail
 }
 
 export const adminUsersRouter = createTRPCRouter({
-  list: adminProcedure.query(async ({ ctx }: { ctx: Context }) => {
+  list: adminProcedure.query(async ({ ctx }) => {
     const admins = await ctx.db.user.findMany({
       where: { adminRole: { not: null } },
       select: {
@@ -41,7 +42,7 @@ export const adminUsersRouter = createTRPCRouter({
       orderBy: { createdAt: 'asc' },
     })
 
-    return admins.map((admin: typeof admins[0]) => ({
+    return admins.map((admin) => ({
       id: admin.id,
       name: admin.name,
       email: admin.email,
@@ -58,8 +59,10 @@ export const adminUsersRouter = createTRPCRouter({
         adminRole: z.enum(['SUPER_ADMIN', 'ADMIN']),
       }),
     )
-    .mutation(async ({ ctx, input }: { ctx: Context; input: { email: string; adminRole: 'SUPER_ADMIN' | 'ADMIN' } }) => {
-      if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
+      }
 
       const email = input.email.toLowerCase()
       const actorAdminId = ctx.session.user.id
@@ -75,16 +78,22 @@ export const adminUsersRouter = createTRPCRouter({
         },
       })
 
-      const idempotencyKey = generateIdempotencyKey('invite', { email, role: input.adminRole })
+      const idempotencyKey = generateIdempotencyKey('invite', {
+        email,
+        role: input.adminRole,
+      })
+
       let userId = existing?.id ?? ''
-      let inviteStatus: 'invited_new_user' | 'invited_existing_user' | 'access_link_resent' = 'invited_new_user'
+      let inviteStatus: 'invited_new_user' | 'invited_existing_user' | 'access_link_resent' =
+        'invited_new_user'
 
       try {
         await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
           if (existing) {
-            inviteStatus = existing.adminRole === input.adminRole
-              ? 'access_link_resent'
-              : 'invited_existing_user'
+            inviteStatus =
+              existing.adminRole === input.adminRole
+                ? 'access_link_resent'
+                : 'invited_existing_user'
 
             await tx.user.update({
               where: { id: existing.id },
@@ -111,7 +120,7 @@ export const adminUsersRouter = createTRPCRouter({
           }
 
           await tx.adminAuditLog.create({
-              data: {
+            data: {
               adminId: actorAdminId,
               action: 'INVITE_ADMIN',
               targetId: userId,
@@ -127,37 +136,46 @@ export const adminUsersRouter = createTRPCRouter({
           })
         })
       } catch (err) {
-        Sentry.captureException(err, { tags: { action: 'invite_admin', phase: 'tx' }, extra: { email } })
+        Sentry.captureException(err, {
+          tags: { action: 'invite_admin', phase: 'tx' },
+          extra: { email },
+        })
         throw err
       }
 
       try {
         await sendPasswordResetEmail(email, 'invite')
       } catch (emailErr) {
-        await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
-          await tx.adminAuditLog.deleteMany({ where: { idempotencyKey } })
+        await ctx.db
+          .$transaction(async (tx: Prisma.TransactionClient) => {
+            await tx.adminAuditLog.deleteMany({ where: { idempotencyKey } })
 
-          if (!existing) {
-            await tx.user.delete({ where: { id: userId } })
-            return
-          }
+            if (!existing) {
+              await tx.user.delete({ where: { id: userId } })
+              return
+            }
 
-          await tx.user.update({
-            where: { id: existing.id },
-            data: {
-              adminRole: existing.adminRole,
-              emailVerified: existing.emailVerified,
-            },
+            await tx.user.update({
+              where: { id: existing.id },
+              data: {
+                adminRole: existing.adminRole,
+                emailVerified: existing.emailVerified,
+              },
+            })
           })
-        }).catch((compErr) => {
-          console.error('[invite] Compensation failed — manual cleanup required:', compErr)
-          Sentry.captureException(compErr, {
-            tags: { action: 'invite_compensation' },
-            extra: { userId, email },
+          .catch((compErr: unknown) => {
+            console.error('[invite] Compensation failed — manual cleanup required:', compErr)
+            Sentry.captureException(compErr, {
+              tags: { action: 'invite_compensation' },
+              extra: { userId, email },
+            })
           })
+
+        Sentry.captureException(emailErr, {
+          tags: { action: 'invite_admin', phase: 'email_send' },
+          extra: { email },
         })
 
-        Sentry.captureException(emailErr, { tags: { action: 'invite_admin', phase: 'email_send' }, extra: { email } })
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: "Impossibile inviare l'email di accesso. Riprova più tardi.",
@@ -169,8 +187,10 @@ export const adminUsersRouter = createTRPCRouter({
 
   revoke: superAdminProcedure
     .input(z.object({ userId: z.string() }))
-    .mutation(async ({ ctx, input }: { ctx: Context; input: { userId: string } }) => {
-      if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
+      }
 
       if (input.userId === ctx.session.user.id) {
         throw new TRPCError({
@@ -184,18 +204,24 @@ export const adminUsersRouter = createTRPCRouter({
 
       try {
         await ctx.db.$transaction(
-          async (tx) => {
+          async (tx: Prisma.TransactionClient) => {
             const user = await tx.user.findUnique({
               where: { id: input.userId },
               select: { adminRole: true, email: true },
             })
 
             if (!user) {
-              throw new TRPCError({ code: 'NOT_FOUND', message: 'Admin non trovato' })
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Admin non trovato',
+              })
             }
 
             if (user.adminRole === 'SUPER_ADMIN') {
-              const superAdminCount = await tx.user.count({ where: { adminRole: 'SUPER_ADMIN' } })
+              const superAdminCount = await tx.user.count({
+                where: { adminRole: 'SUPER_ADMIN' },
+              })
+
               if (superAdminCount <= 1) {
                 throw new TRPCError({
                   code: 'CONFLICT',
@@ -220,7 +246,10 @@ export const adminUsersRouter = createTRPCRouter({
                 action: 'REVOKE_ADMIN',
                 targetId: input.userId,
                 targetType: 'User',
-                meta: { revokedRole: user.adminRole, email: user.email },
+                meta: {
+                  revokedRole: user.adminRole,
+                  email: user.email,
+                },
                 idempotencyKey,
               },
             })
@@ -230,40 +259,66 @@ export const adminUsersRouter = createTRPCRouter({
 
         return { success: true }
       } catch (err) {
-        if (err instanceof TRPCError) throw err
-        Sentry.captureException(err, { tags: { action: 'revoke_admin' }, extra: { userId: input.userId } })
+        if (err instanceof TRPCError) {
+          throw err
+        }
+
+        Sentry.captureException(err, {
+          tags: { action: 'revoke_admin' },
+          extra: { userId: input.userId },
+        })
+
         throw err
       }
     }),
 
   changeRole: superAdminProcedure
-    .input(z.object({ userId: z.string(), newRole: z.enum(['SUPER_ADMIN', 'ADMIN']) }))
-    .mutation(async ({ ctx, input }: { ctx: Context; input: { userId: string; newRole: 'SUPER_ADMIN' | 'ADMIN' } }) => {
-      if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
-
-      if (input.userId === ctx.session.user.id) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Non puoi modificare il tuo stesso ruolo' })
+    .input(
+      z.object({
+        userId: z.string(),
+        newRole: z.enum(['SUPER_ADMIN', 'ADMIN']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
       }
 
-      const idempotencyKey = generateIdempotencyKey('changeRole', { userId: input.userId, newRole: input.newRole })
+      if (input.userId === ctx.session.user.id) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Non puoi modificare il tuo stesso ruolo',
+        })
+      }
+
+      const idempotencyKey = generateIdempotencyKey('changeRole', {
+        userId: input.userId,
+        newRole: input.newRole,
+      })
       const actorAdminId = ctx.session.user.id
 
       try {
         await ctx.db.$transaction(
-          async (tx) => {
+          async (tx: Prisma.TransactionClient) => {
             const user = await tx.user.findUnique({
               where: { id: input.userId },
               select: { adminRole: true, email: true },
             })
 
             if (!user) {
-              throw new TRPCError({ code: 'NOT_FOUND', message: 'Admin non trovato' })
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Admin non trovato',
+              })
             }
 
             const oldRole = user.adminRole
 
             if (oldRole === 'SUPER_ADMIN' && input.newRole !== 'SUPER_ADMIN') {
-              const superAdminCount = await tx.user.count({ where: { adminRole: 'SUPER_ADMIN' } })
+              const superAdminCount = await tx.user.count({
+                where: { adminRole: 'SUPER_ADMIN' },
+              })
+
               if (superAdminCount <= 1) {
                 throw new TRPCError({
                   code: 'CONFLICT',
@@ -274,7 +329,10 @@ export const adminUsersRouter = createTRPCRouter({
 
             await tx.user.update({
               where: { id: input.userId },
-              data: { adminRole: input.newRole, adminSessionInvalidatedAt: new Date() },
+              data: {
+                adminRole: input.newRole,
+                adminSessionInvalidatedAt: new Date(),
+              },
             })
 
             await tx.adminAuditLog.create({
@@ -283,7 +341,11 @@ export const adminUsersRouter = createTRPCRouter({
                 action: 'CHANGE_ADMIN_ROLE',
                 targetId: input.userId,
                 targetType: 'User',
-                meta: { oldRole, newRole: input.newRole, email: user.email },
+                meta: {
+                  oldRole,
+                  newRole: input.newRole,
+                  email: user.email,
+                },
                 idempotencyKey,
               },
             })
@@ -293,14 +355,24 @@ export const adminUsersRouter = createTRPCRouter({
 
         return { success: true }
       } catch (err) {
-        if (err instanceof TRPCError) throw err
-        Sentry.captureException(err, { tags: { action: 'change_admin_role' }, extra: { userId: input.userId } })
+        if (err instanceof TRPCError) {
+          throw err
+        }
+
+        Sentry.captureException(err, {
+          tags: { action: 'change_admin_role' },
+          extra: { userId: input.userId },
+        })
+
         throw err
       }
     }),
 
-  logLogin: adminProcedure.mutation(async ({ ctx }: { ctx: Context }) => {
-    if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
+  logLogin: adminProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.session?.user) {
+      throw new TRPCError({ code: 'UNAUTHORIZED' })
+    }
+
     try {
       await ctx.db.adminAuditLog.create({
         data: {
@@ -309,6 +381,7 @@ export const adminUsersRouter = createTRPCRouter({
           meta: { email: ctx.session.user.email },
         },
       })
+
       return { success: true }
     } catch (err) {
       console.error('[Admin logLogin] Failed to log login:', err)
@@ -318,8 +391,10 @@ export const adminUsersRouter = createTRPCRouter({
 
   forceResetPassword: superAdminProcedure
     .input(z.object({ email: z.string().email() }))
-    .mutation(async ({ ctx, input }: { ctx: Context; input: { email: string } }) => {
-      if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session?.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
+      }
 
       const email = input.email.toLowerCase()
       const sendPasswordResetEmail = getPasswordResetSender(ctx)
@@ -329,13 +404,30 @@ export const adminUsersRouter = createTRPCRouter({
         select: { id: true, adminRole: true, email: true },
       })
 
-      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'Admin non trovato' })
-      if (!user.adminRole) throw new TRPCError({ code: 'FORBIDDEN', message: 'Questo utente non è un amministratore' })
-      if (user.email === ctx.session.user.email) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Non puoi forzare il reset password per il tuo stesso account' })
+      if (!user) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Admin non trovato',
+        })
       }
 
-      const idempotencyKey = generateIdempotencyKey('forceResetPassword', { userId: user.id })
+      if (!user.adminRole) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Questo utente non è un amministratore',
+        })
+      }
+
+      if (user.email === ctx.session.user.email) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Non puoi forzare il reset password per il tuo stesso account',
+        })
+      }
+
+      const idempotencyKey = generateIdempotencyKey('forceResetPassword', {
+        userId: user.id,
+      })
 
       await ctx.db.adminAuditLog.create({
         data: {
@@ -343,7 +435,10 @@ export const adminUsersRouter = createTRPCRouter({
           action: 'FORCE_RESET_PASSWORD',
           targetId: user.id,
           targetType: 'User',
-          meta: { email, adminRole: user.adminRole },
+          meta: {
+            email,
+            adminRole: user.adminRole,
+          },
           idempotencyKey,
         },
       })
@@ -352,7 +447,11 @@ export const adminUsersRouter = createTRPCRouter({
         await sendPasswordResetEmail(email, 'force-reset')
       } catch (emailErr) {
         console.error('[forceResetPassword] Email send failed:', emailErr)
-        Sentry.captureException(emailErr, { tags: { action: 'force_reset_password', phase: 'email_send' }, extra: { email } })
+        Sentry.captureException(emailErr, {
+          tags: { action: 'force_reset_password', phase: 'email_send' },
+          extra: { email },
+        })
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: "Impossibile inviare l'email di reset. Riprova più tardi.",
@@ -363,12 +462,23 @@ export const adminUsersRouter = createTRPCRouter({
     }),
 
   listAuditLog: adminProcedure
-    .input(z.object({ limit: z.number().min(1).max(100).default(50), cursor: z.string().optional() }))
-    .query(async ({ ctx, input }: { ctx: Context; input: { limit: number; cursor?: string } }) => {
-      if (!ctx.session?.user) throw new TRPCError({ code: 'UNAUTHORIZED' })
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.session?.user) {
+        throw new TRPCError({ code: 'UNAUTHORIZED' })
+      }
+
       const logs = await ctx.db.adminAuditLog.findMany({
         take: input.limit + 1,
-        ...(input.cursor && { skip: 1, cursor: { id: input.cursor } }),
+        ...(input.cursor && {
+          skip: 1,
+          cursor: { id: input.cursor },
+        }),
         select: {
           id: true,
           adminId: true,
@@ -383,13 +493,14 @@ export const adminUsersRouter = createTRPCRouter({
       })
 
       let nextCursor: string | undefined
+
       if (logs.length > input.limit) {
         const nextLog = logs.pop()
         nextCursor = nextLog?.id
       }
 
       return {
-        logs: logs.map((log: typeof logs[0]) => ({
+        logs: logs.map((log) => ({
           id: log.id,
           adminName: log.admin.name,
           adminEmail: log.admin.email,
