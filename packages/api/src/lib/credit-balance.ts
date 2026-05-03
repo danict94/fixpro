@@ -4,9 +4,15 @@ type CreditTx = Prisma.TransactionClient
 type CreditReadClient = Pick<PrismaClient, 'creditBatch'>
 type CreditBatchAggregateDelegate = Pick<PrismaClient['creditBatch'], 'aggregate'>
 
-type LockedCreditBatch = Awaited<
-  ReturnType<CreditTx['creditBatch']['findMany']>
->[number]
+type LockedCreditBatch = {
+  id: string
+  companyId: string
+  remaining: number
+  amount: number
+  status: string
+  expiresAt: Date
+  createdAt: Date
+}
 
 function resolveBalanceBefore(
   storedTotal: number | null | undefined,
@@ -20,18 +26,18 @@ async function loadAndLockRemainingBatchesTx(
   tx: CreditTx,
   companyId: string,
 ): Promise<LockedCreditBatch[]> {
-  const batches = await tx.creditBatch.findMany({
+  const batches = (await tx.creditBatch.findMany({
     where: {
       companyId,
       status: 'ACTIVE',
       remaining: { gt: 0 },
     },
     orderBy: [{ expiresAt: 'asc' }, { createdAt: 'asc' }],
-  })
+  })) as LockedCreditBatch[]
 
   if (batches.length === 0) return []
 
-  const batchIds = batches.map((batch) => batch.id)
+  const batchIds = batches.map((batch: LockedCreditBatch) => batch.id)
 
   await tx.$queryRaw`
     SELECT id
@@ -75,11 +81,17 @@ async function syncCompanyCreditBalanceFromLockedBatchesTx(
     select: { total: true },
   })
 
-  const activeBatches = batches.filter((batch) => batch.expiresAt >= now)
-  const expiredBatches = batches.filter((batch) => batch.expiresAt < now)
+  const activeBatches = batches.filter((batch: LockedCreditBatch) => batch.expiresAt >= now)
+  const expiredBatches = batches.filter((batch: LockedCreditBatch) => batch.expiresAt < now)
 
-  const totalRemainingCredits = batches.reduce((sum, batch) => sum + batch.remaining, 0)
-  const activeTotal = activeBatches.reduce((sum, batch) => sum + batch.remaining, 0)
+  const totalRemainingCredits = batches.reduce(
+    (sum: number, batch: LockedCreditBatch) => sum + batch.remaining,
+    0,
+  )
+  const activeTotal = activeBatches.reduce(
+    (sum: number, batch: LockedCreditBatch) => sum + batch.remaining,
+    0,
+  )
 
   let runningBalance = resolveBalanceBefore(balance?.total, totalRemainingCredits)
 
@@ -143,7 +155,7 @@ export async function getAvailableCreditBalance(
   db: PrismaClient,
   companyId: string,
 ): Promise<number> {
-  return db.$transaction((tx) => syncCompanyCreditBalanceTx(tx, companyId))
+  return db.$transaction((tx: CreditTx) => syncCompanyCreditBalanceTx(tx, companyId))
 }
 
 async function getActiveCreditBalanceTotal(
