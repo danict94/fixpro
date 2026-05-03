@@ -13,6 +13,11 @@ import {
   type MatchingRequestProfile,
 } from '../lib/matching-engine'
 
+type MatchingCategoriaRow = {
+  categoriaId: string
+  isPrimary: boolean
+}
+
 async function getAvailableCreditsMap(
   db: {
     creditBatch: {
@@ -101,30 +106,27 @@ function startOfWeek(d: Date) {
 }
 
 // ── tipo risultato Haversine ─────────────────────────────────────────────────
+// ── tipo risultato Haversine ─────────────────────────────────────────────────
 async function getMatchingCompaniesForRequest(
   db: Pick<typeof prisma, 'company' | 'matchingInterventoCat'>,
   request: MatchingRequestProfile,
 ) {
   const matchingCategorie = request.interventoId
-    ? await db.matchingInterventoCat.findMany({
+    ? ((await db.matchingInterventoCat.findMany({
         where: {
           interventoId: request.interventoId,
-          attivo: true,
         },
-        orderBy: [
-          { isPrimary: 'desc' },
-          { priorita: 'asc' },
-        ],
         select: {
           categoriaId: true,
           isPrimary: true,
         },
-      })
+      })) as MatchingCategoriaRow[])
     : []
 
   const compatibleCategoriaIds = new Set(
     matchingCategorie.map((matching) => matching.categoriaId),
   )
+
   const primaryCategoriaIds = new Set(
     matchingCategorie
       .filter((matching) => matching.isPrimary)
