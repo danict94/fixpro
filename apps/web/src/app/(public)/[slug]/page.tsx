@@ -6,7 +6,7 @@ export default async function SlugPage({
 }: {
   params: Promise<{ slug: string }>
 }) {
-  const { slug } = await params
+  const { slug } = params
 
   const result = await api.taxonomy.getBySlug({ slug })
 
