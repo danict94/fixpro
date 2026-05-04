@@ -15,7 +15,6 @@ import {
   type MacroInterventoGroup,
 } from '@/lib/taxonomy/interventi'
 
-
 type InterventoForRow = {
   nome: string
   slug: string
@@ -282,8 +281,12 @@ export async function generateMetadata({
   }
 }
 
-export default async function CategoriaDetailPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
+export default async function CategoriaDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
 
   const categoria = await getCategoriaPageData(slug).catch((error) => {
     console.error('Errore caricamento categoria professionale.', error)
