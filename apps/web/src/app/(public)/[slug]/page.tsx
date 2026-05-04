@@ -1,12 +1,9 @@
-import { redirect, notFound } from 'next/navigation'
-import { api } from '@/lib/trpc/server'
-
-type PageProps = {
-  params: { slug: string }
-}
-
-export default async function SlugPage({ params }: PageProps) {
-  const slug = params.slug
+export default async function SlugPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
 
   const result = await api.taxonomy.getBySlug({ slug })
 
