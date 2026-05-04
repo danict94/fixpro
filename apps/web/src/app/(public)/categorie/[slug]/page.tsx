@@ -15,9 +15,6 @@ import {
   type MacroInterventoGroup,
 } from '@/lib/taxonomy/interventi'
 
-type CategorieDetailPageProps = {
-  params: { slug: string }
-}
 
 type InterventoForRow = {
   nome: string
@@ -252,7 +249,11 @@ export function generateStaticParams() {
   return macroInterventoGroups.map((group) => ({ slug: group.slug }))
 }
 
-export async function generateMetadata({ params }: CategorieDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string }
+}): Promise<Metadata> {
   const { slug } = params
 
   const categoria = await getCategoriaPageData(slug).catch((error) => {
@@ -281,7 +282,7 @@ export async function generateMetadata({ params }: CategorieDetailPageProps): Pr
   }
 }
 
-export default async function CategoriaDetailPage({ params }: CategorieDetailPageProps) {
+export default async function CategoriaDetailPage({ params }: { params: { slug: string } }) {
   const { slug } = params
 
   const categoria = await getCategoriaPageData(slug).catch((error) => {
