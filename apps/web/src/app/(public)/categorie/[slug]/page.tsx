@@ -1,4 +1,5 @@
 export const revalidate = 3600
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -251,9 +252,9 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }): Promise<Metadata> {
-  const { slug } = params
+  const { slug } = await params
 
   const categoria = await getCategoriaPageData(slug).catch((error) => {
     console.error('Errore metadata categoria professionale.', error)
@@ -315,8 +316,8 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
   return (
     <main>
       <SectionShell tone="default" spacing="xl">
-        <nav className="text-muted-foreground flex flex-wrap items-center gap-2 text-[13px] font-medium">
-          <Link href="/categorie" className="hover:text-secondary transition">
+        <nav className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-muted-foreground">
+          <Link href="/categorie" className="transition hover:text-secondary">
             Categorie
           </Link>
           <span>/</span>
@@ -325,31 +326,31 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
 
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
           <div className="max-w-[760px]">
-            <p className="text-primary text-[12px] font-semibold tracking-[0.12em] uppercase">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
               Categoria professionale
             </p>
 
-            <h1 className="text-secondary mt-3 text-[34px] leading-[1.04] font-semibold tracking-[-0.045em] sm:text-[44px] lg:text-[52px]">
+            <h1 className="mt-3 text-[34px] font-semibold leading-[1.04] tracking-[-0.045em] text-secondary sm:text-[44px] lg:text-[52px]">
               {categoria.nome}
             </h1>
 
             {categoria.descrizione ? (
-              <p className="text-muted-foreground mt-4 max-w-[680px] text-[16px] leading-7">
+              <p className="mt-4 max-w-[680px] text-[16px] leading-7 text-muted-foreground">
                 {categoria.descrizione}
               </p>
             ) : null}
 
-            <p className="text-muted-foreground mt-4 text-[13px] font-medium">
+            <p className="mt-4 text-[13px] font-medium text-muted-foreground">
               Settore: <span className="text-secondary">{categoria.settore.nome}</span>
             </p>
           </div>
 
-          <aside className="border-border/70 rounded-[28px] border bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
-            <p className="text-secondary text-[15px] font-semibold tracking-[-0.01em]">
+          <aside className="rounded-[28px] border border-border/70 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+            <p className="text-[15px] font-semibold tracking-[-0.01em] text-secondary">
               Hai bisogno di questo professionista?
             </p>
 
-            <p className="text-muted-foreground mt-2 text-[13px] leading-6">
+            <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
               Descrivi il lavoro e invia la richiesta ai professionisti più adatti.
             </p>
 
@@ -366,7 +367,7 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
 
             <Link
               href="/categorie"
-              className="text-primary hover:text-primary/80 mt-4 inline-flex w-full items-center justify-center gap-2 text-[14px] font-semibold transition"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 text-[14px] font-semibold text-primary transition hover:text-primary/80"
             >
               Vedi tutte le categorie
               <ArrowRight className="h-4 w-4" />
@@ -376,11 +377,11 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
 
         <section className="mt-12">
           <div className="max-w-[680px]">
-            <h2 className="text-secondary text-[26px] leading-[1.12] font-semibold tracking-[-0.03em] sm:text-[32px]">
+            <h2 className="text-[26px] font-semibold leading-[1.12] tracking-[-0.03em] text-secondary sm:text-[32px]">
               Interventi principali e servizi coperti
             </h2>
 
-            <p className="text-muted-foreground mt-3 text-[15px] leading-7">
+            <p className="mt-3 text-[15px] leading-7 text-muted-foreground">
               Qui trovi le richieste più adatte a questa categoria professionale e i servizi
               dichiarabili collegati. Nel funnel potrai aggiungere dettagli prima di inviare la
               richiesta.
@@ -388,7 +389,7 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
           </div>
 
           {rows.length > 0 ? (
-            <div className="divide-border/70 border-border/70 mt-8 max-w-[920px] divide-y border-y">
+            <div className="mt-8 max-w-[920px] divide-y divide-border/70 border-y border-border/70">
               {rows.map((row) => (
                 <CategoriaActionRow
                   key={`${row.type}-${row.slug}`}
@@ -403,17 +404,17 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
         </section>
 
         {categoria.interventiSecondary.length > 0 ? (
-          <section className="border-border/70 mt-16 rounded-[28px] border bg-white px-5 py-7 shadow-sm md:px-7">
+          <section className="mt-16 rounded-[28px] border border-border/70 bg-white px-5 py-7 shadow-sm md:px-7">
             <div className="max-w-[680px]">
-              <p className="text-primary text-[12px] font-semibold tracking-[0.12em] uppercase">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
                 Lavori correlati
               </p>
 
-              <h2 className="text-secondary mt-3 text-[24px] font-semibold tracking-[-0.03em]">
+              <h2 className="mt-3 text-[24px] font-semibold tracking-[-0.03em] text-secondary">
                 Lavori complessi dove può essere coinvolto
               </h2>
 
-              <p className="text-muted-foreground mt-3 text-[14px] leading-7">
+              <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
                 In alcuni casi questa categoria professionale può essere coinvolta insieme ad altri
                 specialisti. Per questo li mostriamo separati dagli interventi principali.
               </p>
@@ -424,12 +425,12 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
                 <Link
                   key={intervento.slug}
                   href={getInterventoHref(intervento.slug, categoria.slug)}
-                  className="border-border/70 hover:border-primary/30 hover:bg-primary/5 rounded-[20px] border bg-[#F6F7FB] px-4 py-4 transition"
+                  className="rounded-[20px] border border-border/70 bg-[#F6F7FB] px-4 py-4 transition hover:border-primary/30 hover:bg-primary/5"
                 >
-                  <p className="text-secondary text-[14px] font-semibold">{intervento.nome}</p>
+                  <p className="text-[14px] font-semibold text-secondary">{intervento.nome}</p>
 
                   {intervento.descrizione ? (
-                    <p className="text-muted-foreground mt-2 line-clamp-2 text-[13px] leading-6">
+                    <p className="mt-2 line-clamp-2 text-[13px] leading-6 text-muted-foreground">
                       {intervento.descrizione}
                     </p>
                   ) : null}
@@ -458,8 +459,8 @@ async function MacroCategoriaPage({ group }: { group: MacroInterventoGroup }) {
   return (
     <main>
       <SectionShell tone="default" spacing="xl">
-        <nav className="text-muted-foreground flex flex-wrap items-center gap-2 text-[13px] font-medium">
-          <Link href="/categorie" className="hover:text-secondary transition">
+        <nav className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-muted-foreground">
+          <Link href="/categorie" className="transition hover:text-secondary">
             Categorie
           </Link>
           <span>/</span>
@@ -468,22 +469,22 @@ async function MacroCategoriaPage({ group }: { group: MacroInterventoGroup }) {
 
         <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-[760px]">
-            <p className="text-primary text-[12px] font-semibold tracking-[0.12em] uppercase">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
               Categoria
             </p>
 
-            <h1 className="text-secondary mt-3 text-[34px] leading-[1.04] font-semibold tracking-[-0.045em] sm:text-[44px] lg:text-[52px]">
+            <h1 className="mt-3 text-[34px] font-semibold leading-[1.04] tracking-[-0.045em] text-secondary sm:text-[44px] lg:text-[52px]">
               {group.title}
             </h1>
 
-            <p className="text-muted-foreground mt-4 max-w-[680px] text-[16px] leading-7">
+            <p className="mt-4 max-w-[680px] text-[16px] leading-7 text-muted-foreground">
               {group.description}
             </p>
           </div>
 
           <Link
             href="/categorie"
-            className="text-primary hover:text-primary/80 inline-flex w-fit items-center gap-2 text-[14px] font-semibold transition"
+            className="inline-flex w-fit items-center gap-2 text-[14px] font-semibold text-primary transition hover:text-primary/80"
           >
             Tutte le categorie
             <ArrowRight className="h-4 w-4" />
@@ -492,18 +493,18 @@ async function MacroCategoriaPage({ group }: { group: MacroInterventoGroup }) {
 
         <section className="mt-12">
           <div className="max-w-[620px]">
-            <h2 className="text-secondary text-[26px] leading-[1.12] font-semibold tracking-[-0.03em] sm:text-[32px]">
+            <h2 className="text-[26px] font-semibold leading-[1.12] tracking-[-0.03em] text-secondary sm:text-[32px]">
               Scegli il tipo di intervento
             </h2>
 
-            <p className="text-muted-foreground mt-3 text-[15px] leading-7">
+            <p className="mt-3 text-[15px] leading-7 text-muted-foreground">
               Parti dall’intervento più vicino alla tua esigenza. Nel funnel potrai correggere la
               scelta o aggiungere dettagli prima di inviare.
             </p>
           </div>
 
           {rows.length > 0 ? (
-            <div className="divide-border/70 border-border/70 mt-8 max-w-[920px] divide-y border-y">
+            <div className="mt-8 max-w-[920px] divide-y divide-border/70 border-y border-border/70">
               {rows.map((row) => (
                 <CategoriaActionRow
                   key={`${row.type}-${row.slug}`}
@@ -513,18 +514,18 @@ async function MacroCategoriaPage({ group }: { group: MacroInterventoGroup }) {
               ))}
             </div>
           ) : (
-            <div className="border-border/80 mt-8 border-y border-dashed py-8">
-              <p className="text-secondary text-sm font-semibold">
+            <div className="mt-8 border-y border-dashed border-border/80 py-8">
+              <p className="text-sm font-semibold text-secondary">
                 Nessun intervento disponibile al momento.
               </p>
 
-              <p className="text-muted-foreground mt-2 max-w-[620px] text-sm leading-6">
+              <p className="mt-2 max-w-[620px] text-sm leading-6 text-muted-foreground">
                 Puoi comunque descrivere il lavoro nel funnel e scegliere il servizio più vicino.
               </p>
 
               <Link
                 href={`/richiesta?macro=${encodeURIComponent(group.slug)}`}
-                className="text-primary hover:text-primary/80 mt-5 inline-flex items-center gap-2 text-sm font-semibold transition"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary/80"
               >
                 Avvia richiesta
                 <ArrowRight className="h-4 w-4" />
@@ -539,18 +540,18 @@ async function MacroCategoriaPage({ group }: { group: MacroInterventoGroup }) {
 
 function EmptyCategoriaState({ categoriaSlug }: { categoriaSlug: string }) {
   return (
-    <div className="border-border/80 mt-8 border-y border-dashed py-8">
-      <p className="text-secondary text-sm font-semibold">
+    <div className="mt-8 border-y border-dashed border-border/80 py-8">
+      <p className="text-sm font-semibold text-secondary">
         Nessun intervento o servizio collegato disponibile al momento.
       </p>
 
-      <p className="text-muted-foreground mt-2 max-w-[620px] text-sm leading-6">
+      <p className="mt-2 max-w-[620px] text-sm leading-6 text-muted-foreground">
         Puoi comunque descrivere il lavoro nel funnel e scegliere il servizio più vicino.
       </p>
 
       <Link
         href={`/richiesta?categoria=${encodeURIComponent(categoriaSlug)}`}
-        className="text-primary hover:text-primary/80 mt-5 inline-flex items-center gap-2 text-sm font-semibold transition"
+        className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:text-primary/80"
       >
         Avvia richiesta
         <ArrowRight className="h-4 w-4" />
@@ -577,30 +578,30 @@ function CategoriaActionRow({
     <article className="group grid gap-4 py-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
       <div className="relative pl-5">
         <span
-          className="bg-primary/70 group-hover:bg-primary absolute top-1 left-0 h-8 w-[2px] rounded-full transition-all duration-300 group-hover:h-12"
+          className="absolute left-0 top-1 h-8 w-[2px] rounded-full bg-primary/70 transition-all duration-300 group-hover:h-12 group-hover:bg-primary"
           aria-hidden="true"
         />
 
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-secondary group-hover:text-primary text-[18px] leading-6 font-semibold tracking-[-0.02em] transition">
+          <h3 className="text-[18px] font-semibold leading-6 tracking-[-0.02em] text-secondary transition group-hover:text-primary">
             {row.nome}
           </h3>
 
           {row.type === 'servizio' ? (
-            <span className="bg-primary/10 text-primary rounded-full px-2.5 py-1 text-[11px] font-semibold">
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
               Servizio
             </span>
           ) : null}
         </div>
 
-        <p className="text-muted-foreground mt-2 max-w-[720px] text-[14px] leading-7">
+        <p className="mt-2 max-w-[720px] text-[14px] leading-7 text-muted-foreground">
           {row.descrizione ?? 'Voce disponibile su FixPro.'}
         </p>
       </div>
 
       <Link
         href={href}
-        className="text-primary hover:text-primary/80 inline-flex w-fit items-center gap-2 pl-5 text-[14px] font-semibold transition sm:pl-0"
+        className="inline-flex w-fit items-center gap-2 pl-5 text-[14px] font-semibold text-primary transition hover:text-primary/80 sm:pl-0"
       >
         Avvia richiesta
         <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
