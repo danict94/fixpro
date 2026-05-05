@@ -1,5 +1,6 @@
 'use client'
 
+import { CheckCircle2 } from 'lucide-react'
 import { trpc } from '@/lib/trpc/client'
 
 type CompanyPreview = {
@@ -49,18 +50,36 @@ export function StepCompanies({
   )
 
   const companies: CompanyPreview[] = data ?? []
+  const selectedCompany = companies.find((company) => company.id === selectedCompanyId) ?? null
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-secondary text-lg font-semibold">
-        Scegli un professionista (opzionale)
-      </h2>
+    <div className="space-y-5">
+      <div className="space-y-1.5">
+        <h2 className="text-secondary text-lg font-semibold">
+          Scegli un professionista
+        </h2>
 
-      <p className="text-muted-foreground text-sm">
-        Puoi inviare la richiesta a tutti oppure selezionare un professionista specifico.
-      </p>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Puoi selezionare una delle imprese disponibili oppure continuare nel marketplace.
+        </p>
+      </div>
 
-      {isLoading && <p className="text-sm">Caricamento aziende...</p>}
+      {selectedCompany && (
+        <div className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 stroke-primary" strokeWidth={2} />
+            <p className="text-sm font-medium text-secondary">
+              Hai selezionato {selectedCompany.ragioneSociale}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isLoading && (
+        <p className="text-muted-foreground text-sm">
+          Caricamento aziende...
+        </p>
+      )}
 
       {!isLoading && companies.length === 0 && (
         <p className="text-muted-foreground text-sm">
@@ -69,27 +88,34 @@ export function StepCompanies({
       )}
 
       <div className="space-y-3">
-        {companies.map((company: CompanyPreview) => {
+        {companies.map((company) => {
           const isSelected = selectedCompanyId === company.id
 
           return (
             <button
               key={company.id}
               type="button"
-              onClick={() => {
-                setSelectedCompanyId(isSelected ? null : company.id)
-              }}
+              aria-pressed={isSelected}
+              onClick={() => setSelectedCompanyId(isSelected ? null : company.id)}
               className={`w-full rounded-xl border p-4 text-left transition ${
                 isSelected
-                  ? 'border-primary bg-primary/5'
-                  : 'border-gray-200 hover:border-primary/40'
+                  ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                  : 'border-border bg-background hover:border-primary/40 hover:bg-muted/30'
               }`}
             >
-              <div className="flex justify-between gap-4">
-                <div>
-                  <p className="text-secondary font-semibold">
-                    {company.ragioneSociale}
-                  </p>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-secondary font-semibold">
+                      {company.ragioneSociale}
+                    </p>
+
+                    {isSelected && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        Selezionata
+                      </span>
+                    )}
+                  </div>
 
                   <p className="text-muted-foreground text-xs">
                     {company.city ?? 'Zona non indicata'}
@@ -98,36 +124,50 @@ export function StepCompanies({
                 </div>
 
                 {company.showcaseTier && (
-                  <span className="text-primary text-xs font-semibold">
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                     {company.showcaseTier}
                   </span>
                 )}
               </div>
 
-              {company.avgRating !== null && (
-                <p className="mt-2 text-xs">
-                  Valutazione {company.avgRating} ({company.reviewCount} recensioni)
-                </p>
-              )}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {company.avgRating !== null && (
+                  <span>
+                    Valutazione {company.avgRating} · {company.reviewCount} recensioni
+                  </span>
+                )}
 
-              {company.distanceKm !== null && company.distanceKm !== undefined && (
-                <p className="text-muted-foreground mt-1 text-[11px]">
-                  {company.distanceKm.toFixed(1)} km di distanza
-                </p>
-              )}
+                {company.distanceKm !== null && company.distanceKm !== undefined && (
+                  <span>
+                    {company.distanceKm.toFixed(1)} km
+                  </span>
+                )}
+              </div>
             </button>
           )
         })}
       </div>
 
-      <div className="pt-4">
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
         <button
           type="button"
           onClick={onSubmit}
           className="primary-pill px-5 py-3 text-sm font-semibold"
         >
-          Continua
+          {selectedCompany
+            ? `Continua con ${selectedCompany.ragioneSociale}`
+            : 'Continua nel marketplace'}
         </button>
+
+        {selectedCompany && (
+          <button
+            type="button"
+            onClick={() => setSelectedCompanyId(null)}
+            className="text-muted-foreground text-sm font-medium hover:text-secondary"
+          >
+            Rimuovi selezione
+          </button>
+        )}
       </div>
     </div>
   )
