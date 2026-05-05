@@ -62,6 +62,12 @@ export function useRequestFormState({
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [otp, setOtp] = useState('')
 
+  /**
+   * 🆕 STEP AZIENDE
+   * Impresa selezionata (opzionale)
+   */
+  const [targetCompanyId, setTargetCompanyId] = useState<string | null>(null)
+
   function clearMessages() {
     setError(null)
     setNotice(null)
@@ -137,6 +143,12 @@ export function useRequestFormState({
     setPrivacyAccepted,
     otp,
     setOtp,
+
+    /**
+     * 🆕 EXPORT STEP AZIENDE
+     */
+    targetCompanyId,
+    setTargetCompanyId,
   }
 }
 

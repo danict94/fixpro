@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/trpc/server'
 import { prisma } from '@fixpro/db'
+import { getActivePublicShowcaseTargetBySlug } from '@fixpro/api'
 import { NuovaRichiestaWizard } from '@/app/area-cliente/richieste/nuova/_components/wizard'
 import { resolveRequestPrefill } from '@/lib/request-prefill'
 
@@ -12,29 +13,38 @@ import { resolveRequestPrefill } from '@/lib/request-prefill'
  * - Guest → wizard inline senza login obbligatorio.
  * Non è nel matcher del middleware, quindi non viene bloccata dall'auth.
  */
+
+type SearchParams = Record<string, string | undefined>
+
 export default async function RichiestaPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string>>
+  searchParams: Promise<SearchParams>
 }) {
   const params = await searchParams
-  const session = await auth.api.getSession({ headers: await headers() })
-  const trimmedQuery = typeof params.q === 'string' ? params.q.trim() : ''
+
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  const trimmedQuery =
+    typeof params.q === 'string' ? params.q.trim() : ''
 
   if (session?.user) {
     const qs = new URLSearchParams()
 
-    if (params.ref) qs.set('ref', params.ref)
-    if (params.slug) qs.set('slug', params.slug)
-    if (params.macro) qs.set('macro', params.macro)
-    if (params.intervento) qs.set('intervento', params.intervento)
-    if (params.categoria) qs.set('categoria', params.categoria)
-    if (params.servizio) qs.set('servizio', params.servizio)
-    if (params.q) qs.set('q', params.q)
+    if (typeof params.ref === 'string') qs.set('ref', params.ref)
+    if (typeof params.slug === 'string') qs.set('slug', params.slug)
+    if (typeof params.macro === 'string') qs.set('macro', params.macro)
+    if (typeof params.intervento === 'string') qs.set('intervento', params.intervento)
+    if (typeof params.categoria === 'string') qs.set('categoria', params.categoria)
+    if (typeof params.servizio === 'string') qs.set('servizio', params.servizio)
+    if (typeof params.q === 'string') qs.set('q', params.q)
 
-    const dest = qs.toString()
-      ? `/area-cliente/richieste/nuova?${qs.toString()}`
-      : '/area-cliente/richieste/nuova'
+    const dest =
+      qs.toString().length > 0
+        ? `/area-cliente/richieste/nuova?${qs.toString()}`
+        : '/area-cliente/richieste/nuova'
 
     redirect(dest)
   }
@@ -48,17 +58,23 @@ export default async function RichiestaPage({
   const [settori, interventi, searchResults] = await Promise.all([
     api.taxonomy.getSettori(),
     api.taxonomy.getInterventi(),
-    shouldResolveFromQuery ? api.taxonomy.searchTaxonomy({ q: trimmedQuery }) : undefined,
+    shouldResolveFromQuery
+      ? api.taxonomy.searchTaxonomy({ q: trimmedQuery })
+      : undefined,
   ])
 
   let targetCompany: { id: string; ragioneSociale: string } | null = null
 
-  if (params.ref === 'showcase' && params.slug) {
-    targetCompany =
-      (await prisma.company.findUnique({
-        where: { slug: params.slug },
-        select: { id: true, ragioneSociale: true },
-      })) ?? null
+  if (params.ref === 'showcase' && typeof params.slug === 'string') {
+    const activeTargetCompany =
+      await getActivePublicShowcaseTargetBySlug(prisma, params.slug)
+
+    if (activeTargetCompany) {
+      targetCompany = {
+        id: activeTargetCompany.id,
+        ragioneSociale: activeTargetCompany.ragioneSociale,
+      }
+    }
   }
 
   const {
@@ -89,7 +105,10 @@ export default async function RichiestaPage({
       : null
 
   const initialPrefillTitle =
-    initialIntervento?.nome ?? initialServizio?.nome ?? initialCategoria?.nome ?? null
+    initialIntervento?.nome ??
+    initialServizio?.nome ??
+    initialCategoria?.nome ??
+    null
 
   const initialPrefillSubtitle =
     initialIntervento && initialServizio

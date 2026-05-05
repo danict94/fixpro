@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
 import { Prisma } from '@fixpro/db'
+import { getActivePublicShowcaseTargetById } from './public-showcase-company'
 
 // createInputBase usato anche da createFromGuest via .extend().
 // Regola funnel: l'intervento è l'unità obbligatoria della richiesta.
@@ -76,6 +77,20 @@ export async function buildAndCreateRequest(
   const requestedInterventoId = input.interventoId.trim()
   const requestedCategoriaId = input.categoriaId?.trim() || null
   const requestedServizioId = input.servizioId?.trim() || null
+  const requestedTargetCompanyId = input.targetCompanyId?.trim() || null
+
+  const activeTargetCompany = requestedTargetCompanyId
+    ? await getActivePublicShowcaseTargetById(tx, requestedTargetCompanyId)
+    : null
+
+  const safeTargetCompanyId = activeTargetCompany?.id ?? null
+
+  if (requestedTargetCompanyId && !safeTargetCompanyId && !input.province && input.lat === undefined) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'La vetrina selezionata non è disponibile. Seleziona una zona per inviare la richiesta al marketplace.',
+    })
+  }
 
   const intervento = (await tx.intervento.findUnique({
     where: { id: requestedInterventoId },
@@ -198,7 +213,7 @@ export async function buildAndCreateRequest(
       contactSurname: input.contactSurname.trim(),
       contactPhone: input.contactPhone?.trim() ?? null,
       contactEmail: input.contactEmail?.trim() ?? null,
-      targetCompanyId: input.targetCompanyId ?? null,
+      targetCompanyId: safeTargetCompanyId,
       privacyConsentAt: input.privacyConsentAt ?? null,
       privacyConsentVersion: input.privacyConsentVersion ?? null,
       status: 'PENDING',

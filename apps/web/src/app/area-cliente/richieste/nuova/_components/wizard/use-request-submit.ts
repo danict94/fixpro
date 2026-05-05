@@ -88,6 +88,7 @@ export function useRequestSubmit({
       interventoId,
       categoriaId: categoriaId?.trim() || undefined,
       servizioId: form.servizioId.trim() || undefined,
+      targetCompanyId: form.targetCompanyId ?? targetCompany?.id ?? undefined,
       workType: form.workType,
       description: buildDescriptionWithDimensions({
         description: form.description,
@@ -111,7 +112,6 @@ export function useRequestSubmit({
       contactSurname: form.contactSurname.trim(),
       contactPhone: form.contactPhone.trim() || undefined,
       contactEmail: form.contactEmail.trim() || undefined,
-      targetCompanyId: targetCompany?.id ?? undefined,
     }
   }
 

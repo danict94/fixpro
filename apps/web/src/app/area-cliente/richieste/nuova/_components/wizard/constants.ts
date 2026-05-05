@@ -15,6 +15,7 @@ import type { WorkTypeOption } from './types'
 export const STEPS_LOGGED = [
   'Dove si fa il lavoro?',
   'Cosa devi fare?',
+  'Professionisti disponibili',
   'Dettagli & urgenza',
   'Immagini (opzionale)',
   'Che intenzione hai?',
@@ -24,6 +25,7 @@ export const STEPS_LOGGED = [
 export const STEPS_GUEST = [
   'Dove si fa il lavoro?',
   'Cosa devi fare?',
+  'Professionisti disponibili',
   'Dettagli & urgenza',
   'Immagini (opzionale)',
   'Che intenzione hai?',
@@ -32,10 +34,20 @@ export const STEPS_GUEST = [
   'Verifica contatti',
 ]
 
-export const ICONS_LOGGED = [MapPin, Layers, Settings2, ImagePlus, HelpCircle, User]
+export const ICONS_LOGGED = [
+  MapPin,
+  Layers,
+  Building2,
+  Settings2,
+  ImagePlus,
+  HelpCircle,
+  User,
+]
+
 export const ICONS_GUEST = [
   MapPin,
   Layers,
+  Building2,
   Settings2,
   ImagePlus,
   HelpCircle,

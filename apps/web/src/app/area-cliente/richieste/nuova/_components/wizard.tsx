@@ -4,7 +4,7 @@ import Link from 'next/link'
 import type { ElementType } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, Sparkles } from 'lucide-react'
-
+import { StepCompanies } from './wizard/step-companies'
 import { Card, CardContent, CardHeader } from '@fixpro/ui'
 
 import {
@@ -367,6 +367,19 @@ export function NuovaRichiestaWizard({
           )}
 
           {form.step === 2 && (
+            <StepCompanies
+              interventoId={form.interventoId}
+              categoriaId={resolvedCategoriaId ?? ''}
+              lat={form.lat}
+              lng={form.lng}
+              province={form.province}
+              selectedCompanyId={form.targetCompanyId}
+              setSelectedCompanyId={form.setTargetCompanyId}
+              onSubmit={() => form.setStep(3)}
+            />
+          )}
+
+          {form.step === 3 && (
             <StepDetails
               error={form.error}
               onSubmit={submit.handleStep2}
@@ -377,7 +390,7 @@ export function NuovaRichiestaWizard({
             />
           )}
 
-          {form.step === 3 && (
+          {form.step === 4 && (
             <StepImages
               error={form.error}
               onSubmit={submit.handleStep3}
@@ -388,7 +401,7 @@ export function NuovaRichiestaWizard({
             />
           )}
 
-          {form.step === 4 && (
+          {form.step === 5 && (
             <StepIntention
               error={form.error}
               onSubmit={submit.handleStep4}
@@ -397,7 +410,7 @@ export function NuovaRichiestaWizard({
             />
           )}
 
-          {form.step === 5 && (
+          {form.step === 6 && (
             <StepContacts
               isGuest={isGuest}
               initialUser={initialUser}
@@ -420,7 +433,7 @@ export function NuovaRichiestaWizard({
             />
           )}
 
-          {form.step === 6 && isGuest && (
+          {form.step === 7 && isGuest && (
             <StepGuestAccount
               error={form.error}
               loading={submit.loading}
@@ -434,7 +447,7 @@ export function NuovaRichiestaWizard({
             />
           )}
 
-          {form.step === 7 && isGuest && (
+          {form.step === 8 && isGuest && (
             <StepOtp
               error={form.error}
               loading={submit.loading}

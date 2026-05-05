@@ -7,6 +7,7 @@ import { creditsRouter } from './routers/credits'
 import { contactsRouter } from './routers/contacts'
 import { assistanceRouter } from './routers/assistance'
 import { rescuesRouter } from './routers/rescues'
+import { matchingRouter } from './routers/matching'
 import { showcaseRouter } from './routers/showcase'
 import { reviewsRouter } from './routers/reviews'
 
@@ -21,6 +22,7 @@ export const webRouter = createTRPCRouter({
   rescues: rescuesRouter,
   showcase: showcaseRouter,
   reviews: reviewsRouter,
+  matching: matchingRouter,
 })
 
 export type WebRouter = typeof webRouter

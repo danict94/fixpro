@@ -5,6 +5,8 @@ import { spendCompanyCreditsTx } from './credit-balance'
 import { calculateRequestUnlockPricing } from './showcase-pricing'
 import { expireShowcaseSubscriptions } from './showcase-subscription'
 
+import { isActiveShowcase } from './showcase-visibility'
+
 type Tx = Prisma.TransactionClient
 
 type PurchaseRequestWithCreditsInput = {
@@ -189,7 +191,7 @@ async function purchaseRequestWithCreditsTx(
       },
     })
 
-    const isSubActive = sub?.status === 'ACTIVE' && sub.expiresAt > new Date()
+    const isSubActive = isActiveShowcase(sub)
 
     if (isSubActive && sub?.plan) {
       const startOfMonth = new Date()

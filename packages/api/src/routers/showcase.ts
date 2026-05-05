@@ -9,41 +9,34 @@
 
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import {
-  createTRPCRouter,
-  publicProcedure,
-  companyProcedure,
-  superAdminProcedure,
-} from '../trpc'
+import { createTRPCRouter, publicProcedure, companyProcedure, superAdminProcedure } from '../trpc'
 import type { prisma } from '@fixpro/db'
-import {
-  calculateShowcaseContactCost,
-  isShowcaseSource,
-} from '../lib/showcase-pricing'
+import { calculateShowcaseContactCost, isShowcaseSource } from '../lib/showcase-pricing'
 import { expireShowcaseSubscriptions } from '../lib/showcase-subscription'
-
+import { buildActivePublicShowcaseCompanyWhere } from '../lib/public-showcase-company'
+import { isActiveShowcase } from '../lib/showcase-visibility'
 // ─── Campi pubblici di un profilo vetrina ────────────────────────────────────
 
 const PUBLIC_COMPANY_SELECT = {
-  id:                 true,
-  slug:               true,
-  ragioneSociale:     true,
-  description:        true,
+  id: true,
+  slug: true,
+  ragioneSociale: true,
+  description: true,
   descriptionExtended: true,
-  logoUrl:            true,
-  coverImageUrl:      true,
-  galleryImages:      true,
-  phone:              true,
-  city:               true,
-  province:           true,
-  verified:           true,
-  status:             true,
-  createdAt:          true,
+  logoUrl: true,
+  coverImageUrl: true,
+  galleryImages: true,
+  phone: true,
+  city: true,
+  province: true,
+  verified: true,
+  status: true,
+  createdAt: true,
   categories: {
     select: {
       categoria: {
         select: {
-          id:   true,
+          id: true,
           nome: true,
           slug: true,
           settore: { select: { id: true, nome: true, slug: true } },
@@ -53,25 +46,25 @@ const PUBLIC_COMPANY_SELECT = {
   },
   showcase: {
     select: {
-      status:    true,
+      status: true,
       expiresAt: true,
       plan: {
         select: {
-          tier:        true,
-          name:        true,
+          tier: true,
+          name: true,
           description: true,
         },
       },
     },
   },
   reviews: {
-    where:   { published: true },
+    where: { published: true },
     orderBy: { createdAt: 'desc' as const },
-    take:    10,
+    take: 10,
     select: {
-      id:        true,
-      rating:    true,
-      body:      true,
+      id: true,
+      rating: true,
+      body: true,
       createdAt: true,
     },
   },
@@ -81,7 +74,7 @@ const PUBLIC_COMPANY_SELECT = {
 
 async function countFreeShowcaseContactsThisMonth(
   db: Pick<typeof prisma, 'requestPurchase'>,
-  companyId: string
+  companyId: string,
 ): Promise<number> {
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
@@ -91,8 +84,8 @@ async function countFreeShowcaseContactsThisMonth(
     where: {
       companyId,
       contactSourceType: { not: 'MARKETPLACE_REQUEST' },
-      discountReason:    'SHOWCASE_PRO_FREE',
-      purchasedAt:       { gte: startOfMonth },
+      discountReason: 'SHOWCASE_PRO_FREE',
+      purchasedAt: { gte: startOfMonth },
     },
   })
 }
@@ -100,187 +93,275 @@ async function countFreeShowcaseContactsThisMonth(
 // ─── Router principale ───────────────────────────────────────────────────────
 
 export const showcaseRouter = createTRPCRouter({
-
   // ─── PUBLIC ───────────────────────────────────────────────────────────────
 
   public: createTRPCRouter({
-
-    /** Lista professionisti in evidenza (vetrina ACTIVE) */
+    /** Lista professionisti in evidenza: solo imprese APPROVED con vetrina ACTIVE non scaduta. */
     listFeatured: publicProcedure
-      .input(z.object({
-        take:       z.number().int().min(1).max(50).default(12),
-        province:   z.string().optional(),
-        categoriaSlug: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          take: z.number().int().min(1).max(50).default(12),
+          province: z.string().optional(),
+          categoriaSlug: z.string().optional(),
+        }),
+      )
       .query(async ({ ctx, input }) => {
         await expireShowcaseSubscriptions(ctx.db)
+
         const companies = await ctx.db.company.findMany({
-          where: {
-            status:   'APPROVED',                 // approvata dall'admin
-            showcase: {
-              status:    'ACTIVE',
-              expiresAt: { gt: new Date() },
-            },
-            ...(input.province ? { province: input.province } : {}),
-            ...(input.categoriaSlug
-              ? { categories: { some: { categoria: { slug: input.categoriaSlug } } } }
-              : {}),
-          },
+          where: buildActivePublicShowcaseCompanyWhere({
+            province: input.province,
+            categoriaSlug: input.categoriaSlug,
+          }),
           orderBy: [
-            // PRO prima, poi PLUS, poi BASE: desc alfabetico = PRO > PLUS > BASE
             { showcase: { plan: { tier: 'desc' } } },
-            // Tra pari tier: verificate prima, poi più recenti
-            { verified:  'desc' },
+            { verified: 'desc' },
             { updatedAt: 'desc' },
           ],
-          take:    input.take,
-          select:  PUBLIC_COMPANY_SELECT,
-        })
-
-        return companies.map((c) => ({
-          ...c,
-          avgRating:    c.reviews.length > 0
-            ? Math.round((c.reviews.reduce((s, r) => s + r.rating, 0) / c.reviews.length) * 10) / 10
-            : null,
-          reviewCount:  c.reviews.length,
-        }))
-      }),
-
-    /** Profilo pubblico singola impresa per slug */
-    getProfile: publicProcedure
-      .input(z.object({ slug: z.string() }))
-      .query(async ({ ctx, input }) => {
-        await expireShowcaseSubscriptions(ctx.db)
-        const company = await ctx.db.company.findUnique({
-          where:  { slug: input.slug },
+          take: input.take,
           select: PUBLIC_COMPANY_SELECT,
         })
 
-        if (!company || company.status !== 'APPROVED') throw new TRPCError({ code: 'NOT_FOUND' })
+        return companies.map((company) => ({
+          ...company,
+          avgRating:
+            company.reviews.length > 0
+              ? Math.round(
+                  (company.reviews.reduce((sum, review) => sum + review.rating, 0) /
+                    company.reviews.length) *
+                    10,
+                ) / 10
+              : null,
+          reviewCount: company.reviews.length,
+        }))
+      }),
 
-        // Solo le vetrine attive mostrano profilo completo in evidenza
-        const hasActiveShowcase =
-          company.showcase?.status === 'ACTIVE' &&
-          company.showcase.expiresAt > new Date()
+    /** Profilo pubblico singola impresa per slug: solo APPROVED con vetrina ACTIVE non scaduta. */
+    getProfile: publicProcedure
+      .input(z.object({ slug: z.string().min(1) }))
+      .query(async ({ ctx, input }) => {
+        await expireShowcaseSubscriptions(ctx.db)
 
-        const avgRating = company.reviews.length > 0
-          ? Math.round((company.reviews.reduce((s, r) => s + r.rating, 0) / company.reviews.length) * 10) / 10
-          : null
+        const company = await ctx.db.company.findFirst({
+          where: buildActivePublicShowcaseCompanyWhere({
+            slug: input.slug,
+          }),
+          select: PUBLIC_COMPANY_SELECT,
+        })
+
+        if (!company) {
+          throw new TRPCError({ code: 'NOT_FOUND' })
+        }
+
+        const avgRating =
+          company.reviews.length > 0
+            ? Math.round(
+                (company.reviews.reduce((sum, review) => sum + review.rating, 0) /
+                  company.reviews.length) *
+                  10,
+              ) / 10
+            : null
 
         return {
           ...company,
-          // Campi premium: visibili solo con vetrina attiva
-          descriptionExtended: hasActiveShowcase ? company.descriptionExtended : null,
-          coverImageUrl:       hasActiveShowcase ? company.coverImageUrl       : null,
-          galleryImages:       hasActiveShowcase ? company.galleryImages       : [],
-          hasActiveShowcase,
+          descriptionExtended: company.descriptionExtended,
+          coverImageUrl: company.coverImageUrl,
+          galleryImages: company.galleryImages,
+          hasActiveShowcase: true,
           avgRating,
           reviewCount: company.reviews.length,
         }
       }),
   }),
+  /** Preview aziende per wizard richiesta (solo vetrina attiva, filtrata e leggera) */
+  previewMatchingCompanies: publicProcedure
+    .input(
+      z.object({
+        categoriaSlug: z.string().min(1),
+        province: z.string().max(3).optional(),
+        take: z.number().int().min(1).max(20).default(6),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await expireShowcaseSubscriptions(ctx.db)
+
+      type PublicCompanyPreview = {
+        id: string
+        slug: string
+        ragioneSociale: string
+        city: string | null
+        province: string | null
+        showcaseTier: 'BASE' | 'PLUS' | 'PRO'
+        verified: boolean
+        avgRating: number | null
+        reviewCount: number
+      }
+
+      const companies = await ctx.db.company.findMany({
+        where: buildActivePublicShowcaseCompanyWhere({
+          categoriaSlug: input.categoriaSlug,
+          province: input.province,
+        }),
+        orderBy: [
+          { showcase: { plan: { tier: 'desc' } } },
+          { verified: 'desc' },
+          { updatedAt: 'desc' },
+        ],
+        take: input.take,
+        select: {
+          id: true,
+          slug: true,
+          ragioneSociale: true,
+          city: true,
+          province: true,
+          verified: true,
+          showcase: {
+            select: {
+              plan: {
+                select: {
+                  tier: true,
+                },
+              },
+            },
+          },
+          reviews: {
+            where: { published: true },
+            select: { rating: true },
+          },
+        },
+      })
+
+      const result: PublicCompanyPreview[] = companies.map((company) => {
+        if (!company.showcase || !company.showcase.plan) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Showcase plan missing for active company',
+          })
+        }
+
+        const reviewCount = company.reviews.length
+
+        const avgRating =
+          reviewCount > 0
+            ? Math.round(
+                (company.reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount) *
+                  10,
+              ) / 10
+            : null
+
+        return {
+          id: company.id,
+          slug: company.slug,
+          ragioneSociale: company.ragioneSociale,
+          city: company.city,
+          province: company.province,
+          showcaseTier: company.showcase.plan.tier,
+          verified: company.verified,
+          avgRating,
+          reviewCount,
+        }
+      })
+      return result
+    }),
 
   // ─── COMPANY ──────────────────────────────────────────────────────────────
 
   company: createTRPCRouter({
-
     /** Stato vetrina dell'impresa autenticata */
-    getStatus: companyProcedure
-      .query(async ({ ctx }) => {
-        const companyRef = await ctx.db.company.findUniqueOrThrow({
+    getStatus: companyProcedure.query(async ({ ctx }) => {
+      const companyRef = await ctx.db.company.findUniqueOrThrow({
+        where: { userId: ctx.session.user.id },
+        select: { id: true },
+      })
+
+      await expireShowcaseSubscriptions(ctx.db, { companyId: companyRef.id })
+
+      const company = await ctx.db.company.findUniqueOrThrow({
+        where: { userId: ctx.session.user.id },
+        select: {
+          id: true,
+          slug: true,
+          verified: true,
+          showcase: {
+            select: {
+              id: true,
+              status: true,
+              startsAt: true,
+              expiresAt: true,
+              plan: true,
+            },
+          },
+        },
+      })
+
+      const now = new Date()
+      const isActive = isActiveShowcase(company.showcase, now)
+
+      const showcaseContactsTotal = await ctx.db.requestPurchase.count({
+        where: {
+          companyId: company.id,
+          contactSourceType: { not: 'MARKETPLACE_REQUEST' },
+        },
+      })
+
+      const freeContacts = await ctx.db.requestPurchase.count({
+        where: {
+          companyId: company.id,
+          contactSourceType: { not: 'MARKETPLACE_REQUEST' },
+          discountReason: 'SHOWCASE_PRO_FREE',
+        },
+      })
+
+      return {
+        company,
+        isActive,
+        showcaseContactsTotal,
+        freeContactsCount: freeContacts,
+      }
+    }),
+
+    /** Piani disponibili per l'acquisto */
+    listPlans: companyProcedure.query(async ({ ctx }) => {
+      return ctx.db.showcasePlan.findMany({
+        where: { active: true },
+        orderBy: { tier: 'asc' },
+      })
+    }),
+
+    /** Aggiorna campi del profilo pubblico: logo libero, premium fields solo con vetrina attiva. */
+    updateProfile: companyProcedure
+      .input(
+        z.object({
+          descriptionExtended: z.string().max(2000).optional(),
+          logoUrl: z.string().url().optional().or(z.literal('')),
+          coverImageUrl: z.string().url().optional().or(z.literal('')),
+          galleryImages: z.array(z.string().url()).max(10).optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const company = await ctx.db.company.findUniqueOrThrow({
           where: { userId: ctx.session.user.id },
           select: { id: true },
         })
-        await expireShowcaseSubscriptions(ctx.db, { companyId: companyRef.id })
 
-        const company = await ctx.db.company.findUniqueOrThrow({
-          where:  { userId: ctx.session.user.id },
-          select: {
-            id:       true,
-            slug:     true,
-            verified: true,
-            showcase: {
-              select: {
-                id:        true,
-                status:    true,
-                startsAt:  true,
-                expiresAt: true,
-                plan:      true,
-              },
-            },
-          },
-        })
-
-        const now = new Date()
-        const isActive =
-          company.showcase?.status === 'ACTIVE' &&
-          company.showcase.expiresAt > now
-
-        // Contatti vetrina ricevuti (tutti)
-        const showcaseContactsTotal = await ctx.db.requestPurchase.count({
-          where: {
-            companyId:         company.id,
-            contactSourceType: { not: 'MARKETPLACE_REQUEST' },
-          },
-        })
-
-        // Contatti gratuiti PRO realmente consumati in quota mensile
-        const freeContacts = await ctx.db.requestPurchase.count({
-          where: {
-            companyId:         company.id,
-            contactSourceType: { not: 'MARKETPLACE_REQUEST' },
-            discountReason:    'SHOWCASE_PRO_FREE',
-          },
-        })
-
-        return {
-          company,
-          isActive,
-          showcaseContactsTotal,
-          freeContactsCount: freeContacts,
-        }
-      }),
-
-    /** Piani disponibili per l'acquisto */
-    listPlans: companyProcedure
-      .query(async ({ ctx }) => {
-        return ctx.db.showcasePlan.findMany({
-          where:   { active: true },
-          orderBy: { tier: 'asc' },
-        })
-      }),
-
-    /** Aggiorna campi del profilo pubblico (logo, cover, descrizione estesa, gallery) */
-    updateProfile: companyProcedure
-      .input(z.object({
-        descriptionExtended: z.string().max(2000).optional(),
-        logoUrl:             z.string().url().optional().or(z.literal('')),
-        coverImageUrl:       z.string().url().optional().or(z.literal('')),
-        galleryImages:       z.array(z.string().url()).max(10).optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const company = await ctx.db.company.findUniqueOrThrow({
-          where:  { userId: ctx.session.user.id },
-          select: { id: true },
-        })
-
-        // Cover, gallery e descrizione estesa richiedono vetrina attiva.
-        // logoUrl è libero per tutte le imprese.
         const hasPremiumFields =
           input.descriptionExtended !== undefined ||
-          input.coverImageUrl       !== undefined ||
-          input.galleryImages       !== undefined
+          input.coverImageUrl !== undefined ||
+          input.galleryImages !== undefined
 
         if (hasPremiumFields) {
           await expireShowcaseSubscriptions(ctx.db, { companyId: company.id })
+
           const sub = await ctx.db.showcaseSubscription.findUnique({
-            where:  { companyId: company.id },
+            where: { companyId: company.id },
             select: { status: true, expiresAt: true },
           })
-          const isActive = sub?.status === 'ACTIVE' && sub.expiresAt > new Date()
+
+          const isActive = isActiveShowcase(sub)
+
           if (!isActive) {
             throw new TRPCError({
-              code:    'FORBIDDEN',
+              code: 'FORBIDDEN',
               message: 'Cover, gallery e descrizione estesa richiedono una Vetrina Premium attiva.',
             })
           }
@@ -292,22 +373,18 @@ export const showcaseRouter = createTRPCRouter({
             ...(input.descriptionExtended !== undefined
               ? { descriptionExtended: input.descriptionExtended }
               : {}),
-            ...(input.logoUrl !== undefined
-              ? { logoUrl: input.logoUrl || null }
-              : {}),
+            ...(input.logoUrl !== undefined ? { logoUrl: input.logoUrl || null } : {}),
             ...(input.coverImageUrl !== undefined
               ? { coverImageUrl: input.coverImageUrl || null }
               : {}),
-            ...(input.galleryImages !== undefined
-              ? { galleryImages: input.galleryImages }
-              : {}),
+            ...(input.galleryImages !== undefined ? { galleryImages: input.galleryImages } : {}),
           },
         })
 
         return { ok: true }
       }),
 
-    /** Calcola il costo effettivo di un contatto da vetrina (preview prima dell'acquisto) */
+    /** Calcola il costo effettivo di un contatto da vetrina */
     previewContactCost: companyProcedure
       .input(z.object({ baseCredits: z.number().int().min(0) }))
       .query(async ({ ctx, input }) => {
@@ -315,29 +392,31 @@ export const showcaseRouter = createTRPCRouter({
           where: { userId: ctx.session.user.id },
           select: { id: true },
         })
+
         await expireShowcaseSubscriptions(ctx.db, { companyId: companyRef.id })
 
         const company = await ctx.db.company.findUniqueOrThrow({
-          where:  { userId: ctx.session.user.id },
+          where: { userId: ctx.session.user.id },
           select: {
-            id:      true,
+            id: true,
             showcase: {
               select: {
-                status:    true,
+                status: true,
                 expiresAt: true,
-                plan:      true,
+                plan: true,
               },
             },
           },
         })
 
         const sub = company.showcase
-        if (!sub || sub.status !== 'ACTIVE' || sub.expiresAt <= new Date()) {
+
+        if (!sub || !isActiveShowcase(sub)) {
           return {
-            baseCredits:   input.baseCredits,
-            finalCredits:  input.baseCredits,
-            savedCredits:  0,
-            isFree:        false,
+            baseCredits: input.baseCredits,
+            finalCredits: input.baseCredits,
+            savedCredits: 0,
+            isFree: false,
             discountLabel: 'Nessuno sconto (vetrina non attiva)',
           }
         }
@@ -345,111 +424,122 @@ export const showcaseRouter = createTRPCRouter({
         const freeUsed = await countFreeShowcaseContactsThisMonth(ctx.db, company.id)
 
         return calculateShowcaseContactCost({
-          baseCredits:               input.baseCredits,
-          tier:                      sub.plan.tier,
+          baseCredits: input.baseCredits,
+          tier: sub.plan.tier,
           freeContactsUsedThisMonth: freeUsed,
-          freeContactsQuota:         sub.plan.freeContactsPerMonth,
-          overQuotaDiscountPercent:  sub.plan.overQuotaDiscountPercent,
-          discountPercent:           sub.plan.discountPercent,
+          freeContactsQuota: sub.plan.freeContactsPerMonth,
+          overQuotaDiscountPercent: sub.plan.overQuotaDiscountPercent,
+          discountPercent: sub.plan.discountPercent,
         })
       }),
 
     /** Statistiche vetrina per la dashboard impresa */
-    getStats: companyProcedure
-      .query(async ({ ctx }) => {
-        const company = await ctx.db.company.findUniqueOrThrow({
-          where:  { userId: ctx.session.user.id },
-          select: { id: true },
-        })
+    getStats: companyProcedure.query(async ({ ctx }) => {
+      const company = await ctx.db.company.findUniqueOrThrow({
+        where: { userId: ctx.session.user.id },
+        select: { id: true },
+      })
 
-        const startOfMonth = new Date()
-        startOfMonth.setDate(1)
-        startOfMonth.setHours(0, 0, 0, 0)
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
 
-        const [totalContacts, monthContacts, publishedReviews] = await Promise.all([
-          ctx.db.requestPurchase.count({
-            where: {
-              companyId:         company.id,
-              contactSourceType: { not: 'MARKETPLACE_REQUEST' },
-            },
-          }),
-          ctx.db.requestPurchase.count({
-            where: {
-              companyId:         company.id,
-              contactSourceType: { not: 'MARKETPLACE_REQUEST' },
-              purchasedAt:       { gte: startOfMonth },
-            },
-          }),
-          ctx.db.review.findMany({
-            where:   { companyId: company.id, published: true },
-            select:  { rating: true },
-          }),
-        ])
+      const [totalContacts, monthContacts, publishedReviews] = await Promise.all([
+        ctx.db.requestPurchase.count({
+          where: {
+            companyId: company.id,
+            contactSourceType: { not: 'MARKETPLACE_REQUEST' },
+          },
+        }),
+        ctx.db.requestPurchase.count({
+          where: {
+            companyId: company.id,
+            contactSourceType: { not: 'MARKETPLACE_REQUEST' },
+            purchasedAt: { gte: startOfMonth },
+          },
+        }),
+        ctx.db.review.findMany({
+          where: { companyId: company.id, published: true },
+          select: { rating: true },
+        }),
+      ])
 
-        const avgRating = publishedReviews.length > 0
+      const avgRating =
+        publishedReviews.length > 0
           ? Math.round(
-              (publishedReviews.reduce((s, r) => s + r.rating, 0) / publishedReviews.length) * 10
+              (publishedReviews.reduce((sum, review) => sum + review.rating, 0) /
+                publishedReviews.length) *
+                10,
             ) / 10
           : null
 
-        return {
-          totalShowcaseContacts: totalContacts,
-          monthShowcaseContacts: monthContacts,
-          reviewCount:           publishedReviews.length,
-          avgRating,
-        }
-      }),
+      return {
+        totalShowcaseContacts: totalContacts,
+        monthShowcaseContacts: monthContacts,
+        reviewCount: publishedReviews.length,
+        avgRating,
+      }
+    }),
   }),
 
   // ─── ADMIN ────────────────────────────────────────────────────────────────
 
   admin: createTRPCRouter({
-
     /** Lista piani vetrina */
-    listPlans: superAdminProcedure
-      .query(async ({ ctx }) => {
-        return ctx.db.showcasePlan.findMany({ orderBy: { tier: 'asc' } })
-      }),
+    listPlans: superAdminProcedure.query(async ({ ctx }) => {
+      return ctx.db.showcasePlan.findMany({ orderBy: { tier: 'asc' } })
+    }),
 
     /** Crea o aggiorna un piano vetrina */
     upsertPlan: superAdminProcedure
-      .input(z.object({
-        tier:                     z.enum(['BASE', 'PLUS', 'PRO']),
-        name:                     z.string().min(1).max(100),
-        description:              z.string().optional(),
-        monthlyPriceCents:        z.number().int().min(0),
-        yearlyPriceCents:         z.number().int().min(0).optional(),
-        discountPercent:          z.number().int().min(0).max(100),
-        freeContactsPerMonth:     z.number().int().min(0).default(0),
-        overQuotaDiscountPercent: z.number().int().min(0).max(100).default(0),
-        active:                   z.boolean().default(true),
-      }))
+      .input(
+        z.object({
+          tier: z.enum(['BASE', 'PLUS', 'PRO']),
+          name: z.string().min(1).max(100),
+          description: z.string().optional(),
+          monthlyPriceCents: z.number().int().min(0),
+          yearlyPriceCents: z.number().int().min(0).optional(),
+          discountPercent: z.number().int().min(0).max(100),
+          freeContactsPerMonth: z.number().int().min(0).default(0),
+          overQuotaDiscountPercent: z.number().int().min(0).max(100).default(0),
+          active: z.boolean().default(true),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
         return ctx.db.showcasePlan.upsert({
-          where:  { tier: input.tier },
+          where: { tier: input.tier },
           create: input,
           update: input,
         })
       }),
 
-    /** Lista subscription attive */
+    /** Lista subscription */
     listSubscriptions: superAdminProcedure
-      .input(z.object({
-        status: z.enum(['ACTIVE', 'EXPIRED', 'CANCELLED']).optional(),
-        take:   z.number().int().min(1).max(100).default(50),
-        skip:   z.number().int().min(0).default(0),
-      }))
+      .input(
+        z.object({
+          status: z.enum(['ACTIVE', 'EXPIRED', 'CANCELLED']).optional(),
+          take: z.number().int().min(1).max(100).default(50),
+          skip: z.number().int().min(0).default(0),
+        }),
+      )
       .query(async ({ ctx, input }) => {
         await expireShowcaseSubscriptions(ctx.db)
+
         return ctx.db.showcaseSubscription.findMany({
-          where:   input.status ? { status: input.status } : undefined,
+          where: input.status ? { status: input.status } : undefined,
           orderBy: { createdAt: 'desc' },
-          take:    input.take,
-          skip:    input.skip,
+          take: input.take,
+          skip: input.skip,
           include: {
-            plan:    true,
+            plan: true,
             company: {
-              select: { id: true, ragioneSociale: true, slug: true, verified: true, status: true },
+              select: {
+                id: true,
+                ragioneSociale: true,
+                slug: true,
+                verified: true,
+                status: true,
+              },
             },
           },
         })
@@ -457,11 +547,13 @@ export const showcaseRouter = createTRPCRouter({
 
     /** Assegna manualmente una subscription vetrina a un'impresa */
     assignSubscription: superAdminProcedure
-      .input(z.object({
-        companyId: z.string(),
-        tier:      z.enum(['BASE', 'PLUS', 'PRO']),
-        months:    z.number().int().min(1).max(24).default(1),
-      }))
+      .input(
+        z.object({
+          companyId: z.string(),
+          tier: z.enum(['BASE', 'PLUS', 'PRO']),
+          months: z.number().int().min(1).max(24).default(1),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
         const plan = await ctx.db.showcasePlan.findUniqueOrThrow({
           where: { tier: input.tier },
@@ -475,10 +567,11 @@ export const showcaseRouter = createTRPCRouter({
         })
 
         const now = new Date()
-        const anchor =
-          existing?.status === 'ACTIVE' && existing.expiresAt > now
-            ? new Date(existing.expiresAt)
-            : new Date(now)
+        const activeExistingExpiresAt =
+          existing && isActiveShowcase(existing, now) ? existing.expiresAt : null
+
+        const anchor = activeExistingExpiresAt ? new Date(activeExistingExpiresAt) : new Date(now)
+
         const expiresAt = new Date(anchor)
         expiresAt.setMonth(expiresAt.getMonth() + input.months)
 
@@ -508,8 +601,9 @@ export const showcaseRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         await ctx.db.showcaseSubscription.update({
           where: { companyId: input.companyId },
-          data:  { status: 'CANCELLED' },
+          data: { status: 'CANCELLED' },
         })
+
         return { ok: true }
       }),
 
@@ -519,8 +613,9 @@ export const showcaseRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         await ctx.db.review.update({
           where: { id: input.reviewId },
-          data:  { published: input.published },
+          data: { published: input.published },
         })
+
         return { ok: true }
       }),
   }),

@@ -2,6 +2,7 @@
 import { TRPCError } from '@trpc/server'
 import { Prisma } from '@fixpro/db'
 import { maskEmail, maskPhone, maskName } from '@fixpro/shared'
+import { isActiveShowcase } from '../lib/showcase-visibility'
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -14,11 +15,7 @@ import { calculateRequestUnlockPricing } from '../lib/showcase-pricing'
 import { getAvailableCreditBalanceReadOnly } from '../lib/credit-balance'
 import { expireShowcaseSubscriptions } from '../lib/showcase-subscription'
 import { purchaseRequestWithCredits } from '../lib/request-purchase'
-import {
-  buildAndCreateRequest,
-  createInput,
-  createInputBase,
-} from '../lib/request-create'
+import { buildAndCreateRequest, createInput, createInputBase } from '../lib/request-create'
 import {
   normalizePhoneToE164,
   sendGuestOtpSms,
@@ -197,38 +194,36 @@ function buildMatchingTaxonomySql(args: {
 }
 
 export const requestsRouter = createTRPCRouter({
-  create: clientProcedure
-    .input(createInput)
-    .mutation(async ({ ctx, input }) => {
-      requireVerifiedUser(ctx.session)
-      setUser(ctx.session.user.id)
+  create: clientProcedure.input(createInput).mutation(async ({ ctx, input }) => {
+    requireVerifiedUser(ctx.session)
+    setUser(ctx.session.user.id)
 
-      const allowed = await checkRateLimit(`client:${ctx.session.user.id}`, CREATE_REQUEST_LIMIT)
-      if (!allowed) {
-        throw new TRPCError({
-          code: 'TOO_MANY_REQUESTS',
-          message: "Troppe richieste. Riprova fra un'ora.",
-        })
-      }
-
-      addBreadcrumb('request', 'Creating service request', {
-        categoria: input.categoriaId,
-        servizio: input.servizioId,
-        province: input.province,
+    const allowed = await checkRateLimit(`client:${ctx.session.user.id}`, CREATE_REQUEST_LIMIT)
+    if (!allowed) {
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: "Troppe richieste. Riprova fra un'ora.",
       })
+    }
 
-       const result = await ctx.db.$transaction((tx: Prisma.TransactionClient) =>
-        buildAndCreateRequest(tx, ctx.session.user.id, input),
-      )
+    addBreadcrumb('request', 'Creating service request', {
+      categoria: input.categoriaId,
+      servizio: input.servizioId,
+      province: input.province,
+    })
 
-      captureMessage('Service request created', 'info', {
-        requestId: result.id,
-        clientId: ctx.session.user.id,
-        categoria: input.categoriaId,
-      })
+    const result = await ctx.db.$transaction((tx: Prisma.TransactionClient) =>
+      buildAndCreateRequest(tx, ctx.session.user.id, input),
+    )
 
-      return result
-    }),
+    captureMessage('Service request created', 'info', {
+      requestId: result.id,
+      clientId: ctx.session.user.id,
+      categoria: input.categoriaId,
+    })
+
+    return result
+  }),
 
   checkCoverage: publicProcedure
     .input(
@@ -327,9 +322,7 @@ export const requestsRouter = createTRPCRouter({
         }
       }
 
-      const prevSendCount = existing
-        ? (JSON.parse(existing.value) as GuestOtpPayload).sendCount
-        : 0
+      const prevSendCount = existing ? (JSON.parse(existing.value) as GuestOtpPayload).sendCount : 0
 
       const payload: GuestOtpPayload = {
         sendCount: prevSendCount + 1,
@@ -388,140 +381,138 @@ export const requestsRouter = createTRPCRouter({
     })
   }),
 
-  listAvailable: companyProcedure
-    .input(listAvailableInput)
-    .query(async ({ ctx, input }) => {
-      const filters = {
-        q: input?.q?.trim() || undefined,
-        city: input?.city?.trim() || undefined,
-        lat: input?.lat,
-        lng: input?.lng,
-        sectorId: input?.sectorId,
-        interventoId: input?.interventoId,
-        categoriaId: input?.categoriaId,
-        servizioId: input?.servizioId,
-        mode: input?.mode === 'explore' ? ('explore' as const) : ('matching' as const),
-      }
+  listAvailable: companyProcedure.input(listAvailableInput).query(async ({ ctx, input }) => {
+    const filters = {
+      q: input?.q?.trim() || undefined,
+      city: input?.city?.trim() || undefined,
+      lat: input?.lat,
+      lng: input?.lng,
+      sectorId: input?.sectorId,
+      interventoId: input?.interventoId,
+      categoriaId: input?.categoriaId,
+      servizioId: input?.servizioId,
+      mode: input?.mode === 'explore' ? ('explore' as const) : ('matching' as const),
+    }
 
-      const company = await ctx.db.company.findUniqueOrThrow({
-        where: { userId: ctx.session.user.id },
-        include: {
-          categories: { include: { categoria: { select: { settoreId: true } } } },
-          services: { select: { servizioId: true } },
-        },
-      })
+    const company = await ctx.db.company.findUniqueOrThrow({
+      where: { userId: ctx.session.user.id },
+      include: {
+        categories: { include: { categoria: { select: { settoreId: true } } } },
+        services: { select: { servizioId: true } },
+      },
+    })
 
-      const companyCategoriaIds = company.categories.map((cc) => cc.categoriaId)
-      const companyServizioIds = company.services.map((service) => service.servizioId)
-      const settoreIds = [...new Set(company.categories.map((cc) => cc.categoria.settoreId))]
-      const now = new Date()
+    const companyCategoriaIds = company.categories.map((cc) => cc.categoriaId)
+    const companyServizioIds = company.services.map((service) => service.servizioId)
+    const settoreIds = [...new Set(company.categories.map((cc) => cc.categoria.settoreId))]
+    const now = new Date()
 
-      const matchingTaxonomyWhere = buildMatchingTaxonomyWhere({
-        companyCategoriaIds,
-        companyServizioIds,
-        settoreIds,
-      })
+    const matchingTaxonomyWhere = buildMatchingTaxonomyWhere({
+      companyCategoriaIds,
+      companyServizioIds,
+      settoreIds,
+    })
 
-      const matchingTaxonomySql = buildMatchingTaxonomySql({
-        companyCategoriaIds,
-        companyServizioIds,
-        settoreIds,
-      })
+    const matchingTaxonomySql = buildMatchingTaxonomySql({
+      companyCategoriaIds,
+      companyServizioIds,
+      settoreIds,
+    })
 
-      const mapRequestRow = (r: {
-        id: string
-        title: string
-        interventoNome?: string | null
-        description: string
-        workType?: 'SMALL' | 'FULL' | 'UNKNOWN'
-        city: string | null
-        province: string | null
-        lat: number | null
-        lng: number | null
-        urgency: string | null
-        creditCost: number | null
-        oneTimePriceCents: number | null
-        hasImages: boolean
-        contactName: string | null
-        contactSurname: string | null
-        contactPhone: string | null
-        contactEmail: string | null
-        interventoId?: string | null
-        categoriaId: string
-        servizioId?: string | null
-        servizio?: { id: string } | null
-        createdAt: Date
-        approvedAt?: Date | null
-        expiresAt: Date | null
-        maxBuyers: number | null
-        targetCompanyId: string | null
-        categoria: { nome: string; settore: { id: string; nome: string } }
-        intervento?: { nome: string } | null
-        purchases: { id: string }[]
-        _count: { purchases: number }
-      }): AvailableRow => ({
-        id: r.id,
-        title: r.title,
-        interventoNome: r.interventoNome ?? r.intervento?.nome ?? null,
-        description: r.description,
-        workType: r.workType ?? 'UNKNOWN',
-        city: r.city,
-        province: r.province,
-        lat: r.lat,
-        lng: r.lng,
-        urgency: r.urgency,
-        creditCost: r.creditCost,
-        oneTimePriceCents: r.oneTimePriceCents,
-        hasImages: r.hasImages,
-        contactName: r.contactName,
-        contactSurname: r.contactSurname,
-        contactPhone: r.contactPhone,
-        contactEmail: r.contactEmail,
-        interventoId: r.interventoId ?? null,
-        categoriaId: r.categoriaId,
-        servizioId: r.servizioId ?? r.servizio?.id ?? null,
-        settoreId: r.categoria.settore.id,
-        categoriaNome: r.categoria.nome,
-        settoreNome: r.categoria.settore.nome,
-        createdAt: r.createdAt,
-        approvedAt: 'approvedAt' in r ? r.approvedAt ?? null : null,
-        expiresAt: r.expiresAt,
-        maxBuyers: r.maxBuyers,
-        targetCompanyId: r.targetCompanyId,
-        distance_km: 0,
-        buyer_count: r._count.purchases,
-        already_purchased: r.purchases.length,
-      })
+    const mapRequestRow = (r: {
+      id: string
+      title: string
+      interventoNome?: string | null
+      description: string
+      workType?: 'SMALL' | 'FULL' | 'UNKNOWN'
+      city: string | null
+      province: string | null
+      lat: number | null
+      lng: number | null
+      urgency: string | null
+      creditCost: number | null
+      oneTimePriceCents: number | null
+      hasImages: boolean
+      contactName: string | null
+      contactSurname: string | null
+      contactPhone: string | null
+      contactEmail: string | null
+      interventoId?: string | null
+      categoriaId: string
+      servizioId?: string | null
+      servizio?: { id: string } | null
+      createdAt: Date
+      approvedAt?: Date | null
+      expiresAt: Date | null
+      maxBuyers: number | null
+      targetCompanyId: string | null
+      categoria: { nome: string; settore: { id: string; nome: string } }
+      intervento?: { nome: string } | null
+      purchases: { id: string }[]
+      _count: { purchases: number }
+    }): AvailableRow => ({
+      id: r.id,
+      title: r.title,
+      interventoNome: r.interventoNome ?? r.intervento?.nome ?? null,
+      description: r.description,
+      workType: r.workType ?? 'UNKNOWN',
+      city: r.city,
+      province: r.province,
+      lat: r.lat,
+      lng: r.lng,
+      urgency: r.urgency,
+      creditCost: r.creditCost,
+      oneTimePriceCents: r.oneTimePriceCents,
+      hasImages: r.hasImages,
+      contactName: r.contactName,
+      contactSurname: r.contactSurname,
+      contactPhone: r.contactPhone,
+      contactEmail: r.contactEmail,
+      interventoId: r.interventoId ?? null,
+      categoriaId: r.categoriaId,
+      servizioId: r.servizioId ?? r.servizio?.id ?? null,
+      settoreId: r.categoria.settore.id,
+      categoriaNome: r.categoria.nome,
+      settoreNome: r.categoria.settore.nome,
+      createdAt: r.createdAt,
+      approvedAt: 'approvedAt' in r ? (r.approvedAt ?? null) : null,
+      expiresAt: r.expiresAt,
+      maxBuyers: r.maxBuyers,
+      targetCompanyId: r.targetCompanyId,
+      distance_km: 0,
+      buyer_count: r._count.purchases,
+      already_purchased: r.purchases.length,
+    })
 
-      const targetedDbRows = await ctx.db.serviceRequest.findMany({
-        where: {
-          targetCompanyId: company.id,
-          status: 'APPROVED',
-          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-        },
-        include: {
-          categoria: {
-            select: {
-              nome: true,
-              settore: { select: { id: true, nome: true } },
-            },
+    const targetedDbRows = await ctx.db.serviceRequest.findMany({
+      where: {
+        targetCompanyId: company.id,
+        status: 'APPROVED',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+      include: {
+        categoria: {
+          select: {
+            nome: true,
+            settore: { select: { id: true, nome: true } },
           },
-          intervento: { select: { nome: true } },
-          purchases: { where: { companyId: company.id }, select: { id: true } },
-          servizio: { select: { id: true } },
-          _count: { select: { purchases: true } },
         },
-      })
+        intervento: { select: { nome: true } },
+        purchases: { where: { companyId: company.id }, select: { id: true } },
+        servizio: { select: { id: true } },
+        _count: { select: { purchases: true } },
+      },
+    })
 
-      const targetedRows = targetedDbRows.map((r) => mapRequestRow(r))
-      const targetedIds = new Set(targetedRows.map((r) => r.id))
+    const targetedRows = targetedDbRows.map((r) => mapRequestRow(r))
+    const targetedIds = new Set(targetedRows.map((r) => r.id))
 
-      let rows: AvailableRow[] = []
+    let rows: AvailableRow[] = []
 
-      if (filters.mode === 'matching') {
-        if (companyCategoriaIds.length > 0 && company.lat !== null && company.lng !== null) {
-          rows = await ctx.db.$queryRaw<AvailableRow[]>(
-            Prisma.sql`
+    if (filters.mode === 'matching') {
+      if (companyCategoriaIds.length > 0 && company.lat !== null && company.lng !== null) {
+        rows = await ctx.db.$queryRaw<AvailableRow[]>(
+          Prisma.sql`
               SELECT DISTINCT
                 r.id,
                 r.title,
@@ -592,46 +583,14 @@ export const requestsRouter = createTRPCRouter({
               ORDER BY r."createdAt" DESC
               LIMIT 200
             `,
-          )
+        )
 
-          if (company.province) {
-            const noCoordRows = await ctx.db.serviceRequest.findMany({
-              where: {
-                status: 'APPROVED',
-                province: company.province,
-                lat: null,
-                OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-                AND: [
-                  { OR: [{ targetCompanyId: null }, { targetCompanyId: company.id }] },
-                  matchingTaxonomyWhere,
-                ],
-              },
-              include: {
-                categoria: {
-                  select: {
-                    nome: true,
-                    settore: { select: { id: true, nome: true } },
-                  },
-                },
-                intervento: { select: { nome: true } },
-                purchases: { where: { companyId: company.id }, select: { id: true } },
-                servizio: { select: { id: true } },
-                _count: { select: { purchases: true } },
-              },
-              orderBy: { createdAt: 'desc' },
-              take: 80,
-            })
-
-            const noCoordMapped = noCoordRows.map((r) => mapRequestRow(r))
-            const existingIds = new Set(rows.map((r) => r.id))
-
-            rows = [...rows, ...noCoordMapped.filter((r) => !existingIds.has(r.id))]
-          }
-        } else if (companyCategoriaIds.length > 0 && company.province) {
-          const prismaRows = await ctx.db.serviceRequest.findMany({
+        if (company.province) {
+          const noCoordRows = await ctx.db.serviceRequest.findMany({
             where: {
               status: 'APPROVED',
               province: company.province,
+              lat: null,
               OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
               AND: [
                 { OR: [{ targetCompanyId: null }, { targetCompanyId: company.id }] },
@@ -651,24 +610,23 @@ export const requestsRouter = createTRPCRouter({
               _count: { select: { purchases: true } },
             },
             orderBy: { createdAt: 'desc' },
-            take: 200,
+            take: 80,
           })
 
-          rows = prismaRows.map((r) => mapRequestRow(r))
+          const noCoordMapped = noCoordRows.map((r) => mapRequestRow(r))
+          const existingIds = new Set(rows.map((r) => r.id))
+
+          rows = [...rows, ...noCoordMapped.filter((r) => !existingIds.has(r.id))]
         }
-      } else {
-        const exploreRows = await ctx.db.serviceRequest.findMany({
+      } else if (companyCategoriaIds.length > 0 && company.province) {
+        const prismaRows = await ctx.db.serviceRequest.findMany({
           where: {
             status: 'APPROVED',
+            province: company.province,
             OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
             AND: [
               { OR: [{ targetCompanyId: null }, { targetCompanyId: company.id }] },
-              ...(filters.city
-                ? [{ city: { equals: filters.city, mode: Prisma.QueryMode.insensitive } }]
-                : []),
-              ...(filters.sectorId ? [{ categoria: { settoreId: filters.sectorId } }] : []),
-              ...(filters.categoriaId ? [{ categoriaId: filters.categoriaId }] : []),
-              ...(filters.servizioId ? [{ servizioId: filters.servizioId }] : []),
+              matchingTaxonomyWhere,
             ],
           },
           include: {
@@ -684,175 +642,217 @@ export const requestsRouter = createTRPCRouter({
             _count: { select: { purchases: true } },
           },
           orderBy: { createdAt: 'desc' },
-          take: 250,
+          take: 200,
         })
 
-        rows = exploreRows.map((r) => mapRequestRow(r))
+        rows = prismaRows.map((r) => mapRequestRow(r))
       }
-
-      const taxonomyMatches = filters.q ? await searchTaxonomyEntities(ctx.db, filters.q) : null
-      const matchedInterventoIds = new Set(taxonomyMatches?.interventi.map((item) => item.id) ?? [])
-      const matchedCategoryIds = new Set(taxonomyMatches?.categorie.map((item) => item.id) ?? [])
-      const matchedServiceIds = new Set(taxonomyMatches?.servizi.map((item) => item.id) ?? [])
-      const hasTaxonomyMatches =
-        matchedInterventoIds.size > 0 || matchedCategoryIds.size > 0 || matchedServiceIds.size > 0
-
-      const interventoCategoryMap = await loadInterventoCategoryMap(ctx.db, [
-        ...new Set([
-          ...rows
-            .map((row) => row.interventoId)
-            .filter((interventoId): interventoId is string => Boolean(interventoId)),
-          ...(filters.interventoId ? [filters.interventoId] : []),
-          ...matchedInterventoIds,
-        ]),
-      ])
-
-      const selectedInterventoCategoryIds = filters.interventoId
-        ? interventoCategoryMap.get(filters.interventoId)
-        : undefined
-
-      rows = [...targetedRows, ...rows.filter((r) => !targetedIds.has(r.id))]
-
-      const filtered = rows
-        .filter((r) => r.already_purchased > 0 || r.maxBuyers === null || r.buyer_count < r.maxBuyers)
-        .filter((r) => {
-          if (filters.city && !cityMatches(r.city, filters.city)) return false
-          if (filters.sectorId && r.settoreId !== filters.sectorId) return false
-
-          if (filters.interventoId) {
-            const compatibleByIntervento =
-              r.interventoId === filters.interventoId ||
-              (selectedInterventoCategoryIds?.has(r.categoriaId) ?? false)
-
-            if (!compatibleByIntervento) return false
-          }
-
-          if (filters.categoriaId && r.categoriaId !== filters.categoriaId) return false
-          if (filters.servizioId && r.servizioId !== filters.servizioId) return false
-
-          if (filters.q) {
-            const qTextMatch = textMatchesQuery(r, filters.q)
-
-            if (!hasTaxonomyMatches) return qTextMatch
-
-            const qInterventoMatch =
-              (r.interventoId ? matchedInterventoIds.has(r.interventoId) : false) ||
-              Array.from(matchedInterventoIds).some(
-                (interventoId) =>
-                  interventoCategoryMap.get(interventoId)?.has(r.categoriaId) ?? false,
-              )
-
-            const qServiceMatch = r.servizioId ? matchedServiceIds.has(r.servizioId) : false
-            const qCategoryMatch = matchedCategoryIds.has(r.categoriaId)
-
-            return qTextMatch || qInterventoMatch || qServiceMatch || qCategoryMatch
-          }
-
-          return true
-        })
-        .map((r) => {
-          const evaluation = evaluateRequestCompanyMatch({
-            company: {
-              id: company.id,
-              lat: company.lat,
-              lng: company.lng,
-              province: company.province,
-              radiusKm: company.radiusKm,
-              workType: company.workType ?? 'BOTH',
-              categoriaIds: companyCategoriaIds,
-              servizioIds: companyServizioIds,
-              settoreIds,
+    } else {
+      const exploreRows = await ctx.db.serviceRequest.findMany({
+        where: {
+          status: 'APPROVED',
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+          AND: [
+            { OR: [{ targetCompanyId: null }, { targetCompanyId: company.id }] },
+            ...(filters.city
+              ? [{ city: { equals: filters.city, mode: Prisma.QueryMode.insensitive } }]
+              : []),
+            ...(filters.sectorId ? [{ categoria: { settoreId: filters.sectorId } }] : []),
+            ...(filters.categoriaId ? [{ categoriaId: filters.categoriaId }] : []),
+            ...(filters.servizioId ? [{ servizioId: filters.servizioId }] : []),
+          ],
+        },
+        include: {
+          categoria: {
+            select: {
+              nome: true,
+              settore: { select: { id: true, nome: true } },
             },
-            request: {
-              id: r.id,
-              interventoId: r.interventoId,
-              categoriaId: r.categoriaId,
-              servizioId: r.servizioId,
-              workType: r.workType,
-              settoreId: r.settoreId,
-              lat: r.lat,
-              lng: r.lng,
-              province: r.province,
-              targetCompanyId: r.targetCompanyId,
-            },
-            interventoCategoryIds: r.interventoId
-              ? interventoCategoryMap.get(r.interventoId)
-              : undefined,
-            allowSectorFallback: filters.mode === 'matching',
-          })
+          },
+          intervento: { select: { nome: true } },
+          purchases: { where: { companyId: company.id }, select: { id: true } },
+          servizio: { select: { id: true } },
+          _count: { select: { purchases: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 250,
+      })
 
-          const serviceMatch = r.servizioId ? matchedServiceIds.has(r.servizioId) : false
-          const categoryMatch = matchedCategoryIds.has(r.categoriaId)
-          const sectorMatch = !!filters.sectorId && r.settoreId === filters.sectorId
-          const selectedCityMatch = !!filters.city && cityMatches(r.city, filters.city)
-          const textMatch = textMatchesQuery(r, filters.q)
+      rows = exploreRows.map((r) => mapRequestRow(r))
+    }
 
-          const relevanceScore =
-            evaluation.score * 20 +
-            (serviceMatch ? 20 : 0) +
-            (categoryMatch ? 10 : 0) +
-            (sectorMatch ? 20 : 0) +
-            (selectedCityMatch ? 15 : 0) +
-            (textMatch && filters.q ? 8 : 0)
+    const taxonomyMatches = filters.q ? await searchTaxonomyEntities(ctx.db, filters.q) : null
+    const matchedInterventoIds = new Set(taxonomyMatches?.interventi.map((item) => item.id) ?? [])
+    const matchedCategoryIds = new Set(taxonomyMatches?.categorie.map((item) => item.id) ?? [])
+    const matchedServiceIds = new Set(taxonomyMatches?.servizi.map((item) => item.id) ?? [])
+    const hasTaxonomyMatches =
+      matchedInterventoIds.size > 0 || matchedCategoryIds.size > 0 || matchedServiceIds.size > 0
 
-          return {
-            ...r,
-            distance_km: Number(r.distance_km ?? 0),
-            buyer_count: Number(r.buyer_count),
-            already_purchased: Number(r.already_purchased),
-            relevanceScore,
-            matchesCompanyPreferences: evaluation.matchesCompanyPreferences,
-            matchingTier: evaluation.matchingTier,
-          }
+    const interventoCategoryMap = await loadInterventoCategoryMap(ctx.db, [
+      ...new Set([
+        ...rows
+          .map((row) => row.interventoId)
+          .filter((interventoId): interventoId is string => Boolean(interventoId)),
+        ...(filters.interventoId ? [filters.interventoId] : []),
+        ...matchedInterventoIds,
+      ]),
+    ])
+
+    const selectedInterventoCategoryIds = filters.interventoId
+      ? interventoCategoryMap.get(filters.interventoId)
+      : undefined
+
+    rows = [...targetedRows, ...rows.filter((r) => !targetedIds.has(r.id))]
+
+    const filtered = rows
+      .filter((r) => r.already_purchased > 0 || r.maxBuyers === null || r.buyer_count < r.maxBuyers)
+      .filter((r) => {
+        if (filters.city && !cityMatches(r.city, filters.city)) return false
+        if (filters.sectorId && r.settoreId !== filters.sectorId) return false
+
+        if (filters.interventoId) {
+          const compatibleByIntervento =
+            r.interventoId === filters.interventoId ||
+            (selectedInterventoCategoryIds?.has(r.categoriaId) ?? false)
+
+          if (!compatibleByIntervento) return false
+        }
+
+        if (filters.categoriaId && r.categoriaId !== filters.categoriaId) return false
+        if (filters.servizioId && r.servizioId !== filters.servizioId) return false
+
+        if (filters.q) {
+          const qTextMatch = textMatchesQuery(r, filters.q)
+
+          if (!hasTaxonomyMatches) return qTextMatch
+
+          const qInterventoMatch =
+            (r.interventoId ? matchedInterventoIds.has(r.interventoId) : false) ||
+            Array.from(matchedInterventoIds).some(
+              (interventoId) =>
+                interventoCategoryMap.get(interventoId)?.has(r.categoriaId) ?? false,
+            )
+
+          const qServiceMatch = r.servizioId ? matchedServiceIds.has(r.servizioId) : false
+          const qCategoryMatch = matchedCategoryIds.has(r.categoriaId)
+
+          return qTextMatch || qInterventoMatch || qServiceMatch || qCategoryMatch
+        }
+
+        return true
+      })
+      .map((r) => {
+        const evaluation = evaluateRequestCompanyMatch({
+          company: {
+            id: company.id,
+            lat: company.lat,
+            lng: company.lng,
+            province: company.province,
+            radiusKm: company.radiusKm,
+            workType: company.workType ?? 'BOTH',
+            categoriaIds: companyCategoriaIds,
+            servizioIds: companyServizioIds,
+            settoreIds,
+          },
+          request: {
+            id: r.id,
+            interventoId: r.interventoId,
+            categoriaId: r.categoriaId,
+            servizioId: r.servizioId,
+            workType: r.workType,
+            settoreId: r.settoreId,
+            lat: r.lat,
+            lng: r.lng,
+            province: r.province,
+            targetCompanyId: r.targetCompanyId,
+          },
+          interventoCategoryIds: r.interventoId
+            ? interventoCategoryMap.get(r.interventoId)
+            : undefined,
+          allowSectorFallback: filters.mode === 'matching',
         })
-        .filter((r) => filters.mode === 'explore' || r.matchingTier !== 'none')
-        .sort((left, right) => {
-          if (left.targetCompanyId === company.id && right.targetCompanyId !== company.id) return -1
-          if (right.targetCompanyId === company.id && left.targetCompanyId !== company.id) return 1
 
-          const leftTier =
-            left.matchingTier === 'intervento'
-              ? 3
-              : left.matchingTier === 'categoria'
-                ? 2
-                : left.matchingTier === 'settore'
-                  ? 1
-                  : 0
+        const serviceMatch = r.servizioId ? matchedServiceIds.has(r.servizioId) : false
+        const categoryMatch = matchedCategoryIds.has(r.categoriaId)
+        const sectorMatch = !!filters.sectorId && r.settoreId === filters.sectorId
+        const selectedCityMatch = !!filters.city && cityMatches(r.city, filters.city)
+        const textMatch = textMatchesQuery(r, filters.q)
 
-          const rightTier =
-            right.matchingTier === 'intervento'
-              ? 3
-              : right.matchingTier === 'categoria'
-                ? 2
-                : right.matchingTier === 'settore'
-                  ? 1
-                  : 0
-
-          if (rightTier !== leftTier) return rightTier - leftTier
-          if (right.relevanceScore !== left.relevanceScore) return right.relevanceScore - left.relevanceScore
-
-          return createdAtTime(right.createdAt) - createdAtTime(left.createdAt)
-        })
-
-      return filtered.map((r) => {
-        const purchased = r.already_purchased > 0
+        const relevanceScore =
+          evaluation.score * 20 +
+          (serviceMatch ? 20 : 0) +
+          (categoryMatch ? 10 : 0) +
+          (sectorMatch ? 20 : 0) +
+          (selectedCityMatch ? 15 : 0) +
+          (textMatch && filters.q ? 8 : 0)
 
         return {
           ...r,
-          purchased,
-          isTargeted: r.targetCompanyId === company.id,
-          relevanceLabel: r.matchesCompanyPreferences ? 'Rilevante' : 'Fuori preferenze',
-          contactName: purchased ? r.contactName : r.contactName ? maskName(r.contactName) : null,
-          contactSurname: purchased
-            ? r.contactSurname
-            : r.contactSurname
-              ? maskName(r.contactSurname)
-              : null,
-          contactPhone: purchased ? r.contactPhone : r.contactPhone ? maskPhone(r.contactPhone) : null,
-          contactEmail: purchased ? r.contactEmail : r.contactEmail ? maskEmail(r.contactEmail) : null,
+          distance_km: Number(r.distance_km ?? 0),
+          buyer_count: Number(r.buyer_count),
+          already_purchased: Number(r.already_purchased),
+          relevanceScore,
+          matchesCompanyPreferences: evaluation.matchesCompanyPreferences,
+          matchingTier: evaluation.matchingTier,
         }
       })
-    }),
+      .filter((r) => filters.mode === 'explore' || r.matchingTier !== 'none')
+      .sort((left, right) => {
+        if (left.targetCompanyId === company.id && right.targetCompanyId !== company.id) return -1
+        if (right.targetCompanyId === company.id && left.targetCompanyId !== company.id) return 1
+
+        const leftTier =
+          left.matchingTier === 'intervento'
+            ? 3
+            : left.matchingTier === 'categoria'
+              ? 2
+              : left.matchingTier === 'settore'
+                ? 1
+                : 0
+
+        const rightTier =
+          right.matchingTier === 'intervento'
+            ? 3
+            : right.matchingTier === 'categoria'
+              ? 2
+              : right.matchingTier === 'settore'
+                ? 1
+                : 0
+
+        if (rightTier !== leftTier) return rightTier - leftTier
+        if (right.relevanceScore !== left.relevanceScore)
+          return right.relevanceScore - left.relevanceScore
+
+        return createdAtTime(right.createdAt) - createdAtTime(left.createdAt)
+      })
+
+    return filtered.map((r) => {
+      const purchased = r.already_purchased > 0
+
+      return {
+        ...r,
+        purchased,
+        isTargeted: r.targetCompanyId === company.id,
+        relevanceLabel: r.matchesCompanyPreferences ? 'Rilevante' : 'Fuori preferenze',
+        contactName: purchased ? r.contactName : r.contactName ? maskName(r.contactName) : null,
+        contactSurname: purchased
+          ? r.contactSurname
+          : r.contactSurname
+            ? maskName(r.contactSurname)
+            : null,
+        contactPhone: purchased
+          ? r.contactPhone
+          : r.contactPhone
+            ? maskPhone(r.contactPhone)
+            : null,
+        contactEmail: purchased
+          ? r.contactEmail
+          : r.contactEmail
+            ? maskEmail(r.contactEmail)
+            : null,
+      }
+    })
+  }),
 
   getAvailable: companyProcedure
     .input(z.object({ id: z.string() }))
@@ -971,7 +971,7 @@ export const requestsRouter = createTRPCRouter({
 
       if (isDirectRequest && req.creditCost !== null && !purchased) {
         const sub = company.showcase
-        const isSubActive = sub?.status === 'ACTIVE' && sub.expiresAt > new Date()
+        const isSubActive = isActiveShowcase(sub)
 
         if (isSubActive && sub?.plan) {
           const startOfMonth = new Date()
@@ -1031,7 +1031,10 @@ export const requestsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       setUser(ctx.session.user.id)
 
-      const allowed = await checkRateLimit(`company:${ctx.session.user.id}:purchase`, PURCHASE_LIMIT)
+      const allowed = await checkRateLimit(
+        `company:${ctx.session.user.id}:purchase`,
+        PURCHASE_LIMIT,
+      )
 
       if (!allowed) {
         throw new TRPCError({
