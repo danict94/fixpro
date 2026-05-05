@@ -857,8 +857,15 @@ export const requestsRouter = createTRPCRouter({
   getAvailable: companyProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const company = await ctx.db.company.findUniqueOrThrow({
+      const companyRef = await ctx.db.company.findUniqueOrThrow({
         where: { userId: ctx.session.user.id },
+        select: { id: true },
+      })
+
+      await expireShowcaseSubscriptions(ctx.db, { companyId: companyRef.id })
+
+      const company = await ctx.db.company.findUniqueOrThrow({
+        where: { id: companyRef.id },
         select: {
           id: true,
           showcase: {
@@ -878,8 +885,6 @@ export const requestsRouter = createTRPCRouter({
           },
         },
       })
-
-      await expireShowcaseSubscriptions(ctx.db, { companyId: company.id })
 
       const creditBalance = await getAvailableCreditBalanceReadOnly(ctx.db, company.id)
 

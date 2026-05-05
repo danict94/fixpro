@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Crown, Sparkles, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@fixpro/ui'
@@ -57,7 +57,9 @@ function PlanCard({
   period: 'monthly' | 'yearly'
   isCurrent: boolean
 }) {
-  const [isPending, startTransition] = useTransition()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const info = TIER_INFO[plan.tier as keyof typeof TIER_INFO] ?? TIER_INFO.BASE
   const Icon = info.icon
 
@@ -66,18 +68,40 @@ function PlanCard({
       ? plan.yearlyPriceCents
       : plan.monthlyPriceCents
 
-  function handleBuy() {
-    startTransition(async () => {
+  async function handleBuy() {
+    if (isSubmitting) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
       const res = await fetch('/api/showcase/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planId: plan.id, period }),
       })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
+
+      let data: { url?: string; error?: string } | null = null
+
+      try {
+        data = await res.json()
+      } catch {
+        data = null
       }
-    })
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'CHECKOUT_FAILED')
+      }
+
+      if (!data?.url) {
+        throw new Error('CHECKOUT_URL_MISSING')
+      }
+
+      window.location.href = data.url
+    } catch {
+      setError('Non siamo riusciti ad avviare il checkout. Riprova tra poco o contatta l’assistenza.')
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -175,13 +199,21 @@ function PlanCard({
             <p className="text-sm font-medium text-success">Piano attivo</p>
           </div>
         ) : (
-          <button
-            onClick={handleBuy}
-            disabled={isPending}
-            className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {isPending ? 'Reindirizzamento...' : 'Attiva piano'}
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={handleBuy}
+              disabled={isSubmitting}
+              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Reindirizzamento...' : 'Attiva piano'}
+            </button>
+
+            {error && (
+              <p className="text-xs font-medium text-destructive">
+                {error}
+              </p>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

@@ -92,7 +92,9 @@ function getAverageRating(reviews: { rating: number }[]): number | null {
   return Math.round((total / reviews.length) * 10) / 10
 }
 
-function mapPreviewCompany(company: MatchingCompany & { distanceKm: number | null }): PreviewCompany {
+function mapPreviewCompany(
+  company: MatchingCompany & { distanceKm: number | null },
+): PreviewCompany {
   const showcaseTier = company.showcase?.plan?.tier ?? null
 
   return {
@@ -141,7 +143,11 @@ export const matchingRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const normalizedCategoriaId = input.categoriaId?.trim() || null
-      const hasPreciseGeo = input.lat !== undefined && input.lng !== undefined
+      const geo =
+        input.lat !== undefined && input.lng !== undefined
+          ? { lat: input.lat, lng: input.lng }
+          : null
+      const hasPreciseGeo = geo !== null
 
       const compatibleCategoryRows = await ctx.db.matchingInterventoCat.findMany({
         where: {
@@ -187,10 +193,10 @@ export const matchingRouter = createTRPCRouter({
 
       const companiesWithDistance = companies.map((company: MatchingCompany) => {
         const distanceKm =
-          hasPreciseGeo && company.lat !== null && company.lng !== null
+          geo !== null && company.lat !== null && company.lng !== null
             ? calculateDistanceKm({
-                originLat: input.lat as number,
-                originLng: input.lng as number,
+                originLat: geo.lat,
+                originLng: geo.lng,
                 targetLat: company.lat,
                 targetLng: company.lng,
               })

@@ -235,8 +235,7 @@ async function purchaseRequestWithCreditsTx(
     })
   }
 
-  const safeDiscountReason =
-    effectiveCost === 0 ? discountReason || 'SHOWCASE_PRO_FREE' : discountReason
+  const safeDiscountReason = discountReason
 
   await tx.requestPurchase.create({
     data: {

@@ -129,12 +129,7 @@ export function calculateRequestUnlockPricing(params: {
     discountPercent: number
   }
 }): UnlockPricingResult {
-  const {
-    baseCredits,
-    baseAmountCents,
-    isShowcaseDirect,
-    showcase,
-  } = params
+  const { baseCredits, baseAmountCents, isShowcaseDirect, showcase } = params
 
   // Se non è diretta o showcase non attivo: prezzi base, no sconto
   if (!isShowcaseDirect || !showcase) {
@@ -158,7 +153,6 @@ export function calculateRequestUnlockPricing(params: {
     }
   }
 
-  // Calcola pricing crediti (riusa la funzione esistente)
   const creditsPricing = calculateShowcaseContactCost({
     baseCredits,
     tier: showcase.tier,
@@ -168,26 +162,26 @@ export function calculateRequestUnlockPricing(params: {
     discountPercent: showcase.discountPercent,
   })
 
-  // Calcola pricing one-time: applica la stessa logica di crediti ai centesimi
   let finalAmountCents = baseAmountCents
   let isFree = false
   let discountReason: string | null = null
+  let appliedDiscountPercent = 0
 
   if (showcase.tier === 'PRO') {
     if (showcase.freeContactsUsedThisMonth < showcase.freeContactsQuota) {
-      // PRO in quota gratuita
       finalAmountCents = 0
       isFree = true
+      appliedDiscountPercent = 100
       discountReason = 'SHOWCASE_PRO_FREE'
     } else {
-      // PRO oltre quota: sconto overQuota
-      finalAmountCents = Math.round(baseAmountCents * (1 - showcase.overQuotaDiscountPercent / 100))
-      discountReason = `SHOWCASE_PRO_DISC_${showcase.overQuotaDiscountPercent}`
+      appliedDiscountPercent = showcase.overQuotaDiscountPercent
+      finalAmountCents = Math.round(baseAmountCents * (1 - appliedDiscountPercent / 100))
+      discountReason = `SHOWCASE_PRO_DISC_${appliedDiscountPercent}`
     }
   } else {
-    // BASE o PLUS: sconto fisso
-    finalAmountCents = Math.round(baseAmountCents * (1 - showcase.discountPercent / 100))
-    discountReason = `SHOWCASE_${showcase.tier}_${showcase.discountPercent}`
+    appliedDiscountPercent = showcase.discountPercent
+    finalAmountCents = Math.round(baseAmountCents * (1 - appliedDiscountPercent / 100))
+    discountReason = `SHOWCASE_${showcase.tier}_${appliedDiscountPercent}`
   }
 
   const savedAmountCents = baseAmountCents - finalAmountCents
@@ -200,12 +194,7 @@ export function calculateRequestUnlockPricing(params: {
       savedAmountCents,
       isFree,
     },
-    discountPercent:
-      isFree
-        ? 100
-        : baseAmountCents === 0
-          ? 0
-          : Math.round((savedAmountCents / baseAmountCents) * 100),
+    discountPercent: appliedDiscountPercent,
     discountReason,
     planSnapshot: {
       tier: showcase.tier,

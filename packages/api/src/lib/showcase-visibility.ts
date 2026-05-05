@@ -1,5 +1,3 @@
-import type { prisma } from '@fixpro/db'
-
 type ShowcaseRef =
   | {
       status: string

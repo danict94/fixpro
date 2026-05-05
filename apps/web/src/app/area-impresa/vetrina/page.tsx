@@ -55,17 +55,29 @@ export default async function VetrinaPage({
 
   const { company, isActive } = status
   const sub = company.showcase
+  const showActivationConfirmed = success && isActive
+  const showActivationPending = success && !isActive
 
   return (
     <div className="space-y-6">
-      {success && (
+      {showActivationConfirmed && (
         <div className="rounded-lg border border-success/30 bg-success/5 px-4 py-3 flex items-center gap-2">
           <CheckCircle2 className="h-4 w-4 shrink-0 stroke-success" strokeWidth={2} />
           <p className="text-sm font-medium text-success">
-            Pagamento ricevuto. La Vetrina si aggiorna automaticamente non appena Stripe conferma il webhook.
+            Piano Vetrina attivo. Il pagamento è stato confermato e il piano risulta attivo.
           </p>
         </div>
       )}
+
+      {showActivationPending && (
+        <div className="rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground">
+            Pagamento in verifica. Stiamo attendendo la conferma tecnica di Stripe prima di attivare il piano.
+            Se il piano non si aggiorna entro pochi minuti, contatta l’assistenza.
+          </p>
+        </div>
+      )}
+
       {canceled && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 flex items-center gap-2">
           <XCircle className="h-4 w-4 shrink-0 stroke-destructive" strokeWidth={2} />
