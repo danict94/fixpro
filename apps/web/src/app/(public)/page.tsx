@@ -227,9 +227,7 @@ function HowStep({
       <div className="relative">
         <Icon className="text-primary mb-3 h-7 w-7" strokeWidth={1.7} />
 
-        <h3 className="text-secondary text-[16px] leading-6 font-semibold">
-          {title}
-        </h3>
+        <h3 className="text-secondary text-[16px] leading-6 font-semibold">{title}</h3>
 
         <p className="text-muted-foreground mt-1.5 max-w-[260px] text-[13px] leading-6">{text}</p>
       </div>
@@ -305,7 +303,7 @@ function MacroServiceCard({
             />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-[#F4F3FF] via-[#F6F7FB] to-white">
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-primary/70" />
+              <div className="bg-primary/70 absolute inset-x-0 bottom-0 h-1" />
             </div>
           )}
 
@@ -313,9 +311,7 @@ function MacroServiceCard({
         </div>
 
         <div className="pt-4">
-          <h3 className="text-secondary text-[20px] leading-[1.12] font-semibold">
-            {title}
-          </h3>
+          <h3 className="text-secondary text-[20px] leading-[1.12] font-semibold">{title}</h3>
 
           <p className="text-muted-foreground mt-2 max-w-[340px] text-[13px] leading-6">{text}</p>
 
@@ -595,9 +591,9 @@ export default function HomePage() {
       <HeroSection />
 
       <HowItWorksSection />
-      <PopularServicesSection />
 
       <HomeKnowledgeSection />
+      <PopularServicesSection />
       <HomeFeaturedProfessionalsSection />
 
       <BusinessSection />
