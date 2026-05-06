@@ -1,9 +1,18 @@
 import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
-import { CheckCircle, XCircle, CreditCard, TrendingDown, TrendingUp, Clock } from 'lucide-react'
+import {
+  CheckCircle,
+  CheckCircle2,
+  XCircle,
+  CreditCard,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Clock,
+} from 'lucide-react'
 import { auth } from '@/lib/auth'
 import { api } from '@/lib/trpc/server'
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@fixpro/ui'
+import { Card, CardContent, CardHeader, CardTitle } from '@fixpro/ui'
 import { BuyCreditsButton } from './_components/buy-credits-button'
 
 type CreditFulfillmentStatus =
@@ -208,34 +217,63 @@ export default async function CreditiPage({
           {packages.map((pkg) => (
             <Card
               key={pkg.id}
-              className={`surface-card border-0 hover:shadow-sm ${
-                pkg.popular ? 'ring-primary/25' : ''
+              className={`surface-card relative overflow-visible border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                pkg.popular ? 'border-primary ring-1 ring-primary/30' : 'border-border/70'
               }`}
             >
-              <CardHeader className="space-y-3 pb-2">
-                <div className="flex items-start justify-between gap-3">
-                  <CardTitle className="text-base text-secondary">{pkg.name}</CardTitle>
-                  {pkg.popular && (
-                    <Badge className="shrink-0 rounded-full bg-primary text-primary-foreground text-xs">
-                      Più popolare
-                    </Badge>
-                  )}
+              {pkg.popular && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <span className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full px-3 py-0.5 text-[11px] font-semibold">
+                    <Sparkles className="h-3 w-3 fill-primary-foreground stroke-none" />
+                    Più popolare
+                  </span>
                 </div>
-                <p className="muted-copy text-sm leading-6">{pkg.description}</p>
+              )}
+
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                    <CreditCard className="h-5 w-5 stroke-primary" strokeWidth={1.9} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-primary text-[11px] font-semibold tracking-[0.12em] uppercase">
+                      Pacchetto crediti
+                    </p>
+                    <CardTitle className="text-base text-secondary">{pkg.name}</CardTitle>
+                  </div>
+                </div>
               </CardHeader>
 
-              <CardContent className="space-y-5">
-                <div className="space-y-2">
+              <CardContent className="space-y-4">
+                <div>
                   <div className="flex flex-wrap items-end gap-2">
                     <span className="text-3xl font-semibold text-secondary">
                       EUR{(pkg.priceCents / 100).toFixed(2).replace('.', ',')}
                     </span>
                     <span className="muted-copy text-sm">{pkg.credits} crediti</span>
                   </div>
-                  <p className="muted-copy text-xs">
+                  <p className="muted-copy mt-1 text-xs">
                     ~EUR{((pkg.priceCents / 100) / pkg.credits).toFixed(2).replace('.', ',')} per
                     credito · Validità {pkg.validityMonths} mesi
                   </p>
+                </div>
+
+                <p className="muted-copy text-sm leading-6">{pkg.description}</p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 stroke-success" strokeWidth={2} />
+                    <span>{pkg.credits} crediti disponibili dopo il pagamento</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 stroke-success" strokeWidth={2} />
+                    <span>Validità {pkg.validityMonths} mesi</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 stroke-success" strokeWidth={2} />
+                    <span>Utilizzabili per sbloccare contatti qualificati</span>
+                  </div>
                 </div>
 
                 <BuyCreditsButton packageId={pkg.id} popular={pkg.popular} />

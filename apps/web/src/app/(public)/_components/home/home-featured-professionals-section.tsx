@@ -150,7 +150,7 @@ function FeaturedProfessionalBlock({ company }: { company: FeaturedProfessional 
   if (!image.src && !ALLOW_IMAGE_PLACEHOLDER) return null
 
   return (
-    <article className="flex h-full gap-3.5 py-4 lg:px-4">
+    <article className="border-primary flex h-full gap-3.5 border-l-[3px] py-4 pl-3 lg:px-4">
       <Link
         href={`/impresa/${company.slug}`}
         className="bg-muted ring-border/70 relative h-20 w-20 shrink-0 overflow-hidden rounded-[18px] ring-1"
