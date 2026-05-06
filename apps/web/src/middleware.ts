@@ -26,6 +26,7 @@ export async function middleware(req: NextRequest) {
   const PUBLIC_PATHS = [
     '/api',            // webhook, tRPC
     '/_next',          // assets Next.js
+    '/images',         // static images used by next/image optimizer
     '/favicon.ico',
   ]
 

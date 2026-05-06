@@ -11,10 +11,10 @@ const toneClasses: Record<SectionShellTone, string> = {
 }
 
 const spacingClasses: Record<SectionShellSpacing, string> = {
-  sm: 'py-10 sm:py-12',
-  md: 'py-12 sm:py-16',
-  lg: 'py-16 sm:py-20',
-  xl: 'py-20 sm:py-24',
+  sm: 'py-8 sm:py-10',
+  md: 'py-10 sm:py-12 lg:py-14',
+  lg: 'py-12 sm:py-14 lg:py-16',
+  xl: 'py-12 sm:py-14 lg:py-16',
 }
 
 export function SectionShell({
@@ -32,9 +32,7 @@ export function SectionShell({
 }) {
   return (
     <section className={`${toneClasses[tone]} ${spacingClasses[spacing]} ${className}`}>
-      <div
-        className={`mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8 ${containerClassName}`}
-      >
+      <div className={`mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8 ${containerClassName}`}>
         {children}
       </div>
     </section>

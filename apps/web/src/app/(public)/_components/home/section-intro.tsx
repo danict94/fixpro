@@ -15,20 +15,20 @@ export function SectionIntro({
     <div
       className={
         align === 'center'
-          ? `mx-auto max-w-[560px] text-center ${className}`
-          : `max-w-[640px] ${className}`
+          ? `mx-auto max-w-[520px] text-center ${className}`
+          : `max-w-[560px] ${className}`
       }
     >
-      <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
+      <p className="text-primary text-[12px] font-semibold tracking-[0.1em] uppercase">
         {eyebrow}
       </p>
 
-      <h2 className="mt-3 text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
+      <h2 className="text-secondary mt-2.5 text-[26px] leading-[1.1] font-semibold sm:text-[31px]">
         {title}
       </h2>
 
       {description && (
-        <p className="mt-3 text-[15px] leading-[1.65] text-muted-foreground">
+        <p className="text-muted-foreground mt-3 text-[13px] leading-6">
           {description}
         </p>
       )}

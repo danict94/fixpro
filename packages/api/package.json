@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./trpc": "./src/trpc.ts",
     "./credit-balance": "./src/lib/credit-balance.ts",
+    "./public-showcase-company": "./src/lib/public-showcase-company.ts",
     "./showcase-subscription": "./src/lib/showcase-subscription.ts",
     "./root": "./src/root.ts",
     "./root-web": "./src/root-web.ts",
