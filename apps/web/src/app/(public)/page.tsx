@@ -594,11 +594,11 @@ export default function HomePage() {
     <>
       <HeroSection />
 
-      <PopularServicesSection />
-      <HomeFeaturedProfessionalsSection />
-
       <HowItWorksSection />
+      <PopularServicesSection />
+
       <HomeKnowledgeSection />
+      <HomeFeaturedProfessionalsSection />
 
       <BusinessSection />
       <DecisionLinksSection />
