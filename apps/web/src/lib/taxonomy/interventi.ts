@@ -123,7 +123,7 @@ export function resolveRequestInterventoSlug(slug: string) {
 export const macroInterventoGroups: readonly MacroInterventoGroup[] = [
   {
     slug: 'bagno',
-    title: 'Bagno & Sanitari',
+    title: 'Bagni e Sanitari',
     description: 'Rifacimenti, sanitari, doccia e lavori che riguardano il bagno.',
     href: '/richiesta?macro=bagno',
     icon: 'bath',

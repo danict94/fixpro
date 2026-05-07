@@ -61,16 +61,16 @@ function HeroFeature({
   return (
     <div className="text-center">
       <div
-        className={`mx-auto flex h-[56px] w-[56px] items-center justify-center rounded-full shadow-[0_12px_30px_rgba(15,23,42,0.10)] ring-1 ${toneClasses.iconWrap}`}
+        className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full shadow-[0_10px_24px_rgba(15,23,42,0.08)] ring-1 ${toneClasses.iconWrap}`}
       >
-        <Icon className={`h-6 w-6 ${toneClasses.icon}`} strokeWidth={2.15} />
+        <Icon className={`h-5 w-5 ${toneClasses.icon}`} strokeWidth={2.1} />
       </div>
 
-      <h3 className="text-secondary mx-auto mt-4 max-w-[135px] text-[14px] leading-5 font-semibold">
+      <h3 className="text-secondary mx-auto mt-3 max-w-[120px] text-[13px] leading-5 font-semibold">
         {title}
       </h3>
 
-      <p className="text-muted-foreground mx-auto mt-1.5 max-w-[140px] text-[12px] leading-5">
+      <p className="text-muted-foreground mx-auto mt-1 max-w-[125px] text-[11.5px] leading-5">
         {text}
       </p>
     </div>
@@ -81,12 +81,11 @@ function HeroSection() {
   return (
     <section className="bg-background relative overflow-hidden">
       <div className="absolute inset-0 hidden overflow-hidden lg:block">
-        <div className="absolute inset-0 translate-x-[2%] scale-[1.04]">
+        <div className="absolute inset-0 translate-x-[2%] scale-[1.03]">
           <Image
             src="/images/home/hero-real.webp"
             alt="Persona che usa FixPro per trovare un professionista per lavori di casa"
             fill
-            priority
             quality={90}
             className="object-cover object-[45%_center]"
             sizes="100vw"
@@ -94,38 +93,38 @@ function HeroSection() {
         </div>
 
         <div
-          className="from-background/82 via-background/18 absolute inset-0 bg-gradient-to-r to-transparent"
+          className="from-background/86 via-background/24 absolute inset-0 bg-gradient-to-r to-transparent"
           aria-hidden="true"
         />
 
         <div
-          className="from-background/48 via-background/12 absolute inset-y-0 left-0 w-[30%] bg-gradient-to-r to-transparent"
+          className="from-background/42 via-background/10 absolute inset-y-0 left-0 w-[30%] bg-gradient-to-r to-transparent"
           aria-hidden="true"
         />
 
         <div
-          className="from-background/20 absolute inset-x-0 bottom-0 h-[14%] bg-gradient-to-t to-transparent"
+          className="from-background/22 absolute inset-x-0 bottom-0 h-[12%] bg-gradient-to-t to-transparent"
           aria-hidden="true"
         />
       </div>
 
       <div className="relative mx-auto max-w-[1240px]">
-        <div className="grid lg:min-h-[700px] lg:grid-cols-[43%_57%]">
+        <div className="grid lg:min-h-[620px] lg:grid-cols-[44%_56%]">
           <div className="relative z-20 flex items-center">
-            <div className="w-full px-5 py-10 sm:px-7 sm:py-12 lg:px-8 lg:py-16 xl:px-9">
-              <div className="w-full lg:max-w-[540px]">
-                <h1 className="text-secondary max-w-[560px] text-[42px] leading-[0.98] font-bold sm:text-[50px] lg:text-[56px] xl:text-[62px]">
+            <div className="w-full px-5 py-8 sm:px-7 sm:py-10 lg:px-8 lg:py-12 xl:px-9">
+              <div className="w-full lg:max-w-[520px]">
+                <h1 className="text-secondary max-w-[540px] text-[34px] leading-[1.02] font-bold sm:text-[42px] lg:text-[50px] xl:text-[54px]">
                   Il professionista giusto, a portata di richiesta.
                 </h1>
 
-                <p className="text-muted-foreground mt-5 max-w-[500px] text-[16px] leading-[1.65] sm:text-[17px]">
+                <p className="text-muted-foreground mt-4 max-w-[480px] text-[15px] leading-[1.6] sm:text-[16px]">
                   Cerca, invia la richiesta e ricevi risposta dai professionisti vicino a te.
                 </p>
 
-                <div className="bg-primary mt-6 h-1 w-20 rounded-full" />
+                <div className="bg-primary mt-5 h-1 w-16 rounded-full" />
 
-                <div className="mt-9 lg:w-[112%]">
-                  <p className="text-secondary mb-3 text-[15px] font-semibold">
+                <div className="mt-7 max-w-[560px]">
+                  <p className="text-secondary mb-2.5 text-[14px] font-semibold">
                     Di cosa hai bisogno?
                   </p>
 
@@ -141,11 +140,11 @@ function HeroSection() {
                   </div>
                 </div>
 
-                <div className="mt-10 grid max-w-[510px] grid-cols-3 gap-8">
+                <div className="mt-8 grid max-w-[460px] grid-cols-3 gap-4 sm:gap-6">
                   <HeroFeature
                     icon={ShieldCheck}
                     title="Professionisti verificati"
-                    text="Solo esperti qualificati e affidabili."
+                    text="Solo esperti qualificati."
                     tone="blue"
                   />
 
@@ -164,20 +163,20 @@ function HeroSection() {
                   />
                 </div>
 
-                <div className="border-border mt-10 border-t pt-6">
+                <div className="border-border mt-8 border-t pt-5">
                   <div className="flex flex-wrap items-center gap-1.5 text-emerald-500">
-                    <Star className="h-4 w-4 fill-current stroke-current" />
-                    <Star className="h-4 w-4 fill-current stroke-current" />
-                    <Star className="h-4 w-4 fill-current stroke-current" />
-                    <Star className="h-4 w-4 fill-current stroke-current" />
-                    <Star className="h-4 w-4 fill-current stroke-current" />
+                    <Star className="h-3.5 w-3.5 fill-current stroke-current" />
+                    <Star className="h-3.5 w-3.5 fill-current stroke-current" />
+                    <Star className="h-3.5 w-3.5 fill-current stroke-current" />
+                    <Star className="h-3.5 w-3.5 fill-current stroke-current" />
+                    <Star className="h-3.5 w-3.5 fill-current stroke-current" />
 
-                    <span className="text-secondary ml-2 text-[14px] font-semibold">
+                    <span className="text-secondary ml-1.5 text-[13px] font-semibold">
                       4.8/5 da oltre 1.200 clienti
                     </span>
                   </div>
 
-                  <p className="text-muted-foreground mt-2 text-[13px] leading-6">
+                  <p className="text-muted-foreground mt-1.5 text-[12.5px] leading-5">
                     Affidati a FixPro e trova il professionista giusto per te.
                   </p>
                 </div>
@@ -185,22 +184,7 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="relative z-10 flex min-h-[460px] items-center justify-center overflow-hidden lg:hidden">
-            <Image
-              src="/images/home/hero-real.webp"
-              alt="Persona che usa FixPro per trovare un professionista per lavori di casa"
-              fill
-              priority
-              quality={90}
-              className="object-cover object-[58%_center]"
-              sizes="100vw"
-            />
-
-            <div
-              className="from-background/58 via-background/12 absolute inset-0 bg-gradient-to-t to-transparent"
-              aria-hidden="true"
-            />
-          </div>
+          <div className="hidden lg:block" aria-hidden="true" />
         </div>
       </div>
     </section>
@@ -272,7 +256,7 @@ function HowItWorksSection() {
   )
 }
 
-function MacroServiceCard({
+function RequestPathCard({
   title,
   text,
   href,
@@ -283,59 +267,49 @@ function MacroServiceCard({
   text: string
   href: string
   items: string[]
-  imageSrc?: string
+  imageSrc: string
 }) {
-  const visibleItems = items.slice(0, 3)
+  const visibleItems = items.slice(0, 2)
   const hiddenCount = Math.max(items.length - visibleItems.length, 0)
-  const safeImageSrc = imageSrc?.trim()
 
   return (
     <Link href={href} className="group block h-full">
-      <article className="relative h-full">
-        <div className="ring-border/60 relative aspect-[16/10] overflow-hidden rounded-[22px] bg-[#F6F7FB] shadow-sm ring-1">
-          {safeImageSrc ? (
-            <Image
-              src={safeImageSrc}
-              alt={title}
-              fill
-              className="object-cover transition duration-500 group-hover:scale-105"
-              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#F4F3FF] via-[#F6F7FB] to-white">
-              <div className="bg-primary/70 absolute inset-x-0 bottom-0 h-1" />
-            </div>
-          )}
+      <article className="ring-border/60 h-full overflow-hidden bg-white shadow-sm ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="relative aspect-[16/8.5] overflow-hidden rounded-tl-[30px] bg-[#F6F7FB]">
+          <Image
+            src={imageSrc}
+            alt={title}
+            fill
+            className="object-cover transition duration-500 group-hover:scale-[1.035]"
+            sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 74vw"
+          />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-black/16 via-transparent to-transparent"
+            aria-hidden="true"
+          />
         </div>
 
-        <div className="pt-4">
-          <h3 className="text-secondary text-[20px] leading-[1.12] font-semibold">{title}</h3>
+        <div className="px-3.5 pt-3.5 pb-4">
+          <h3 className="text-secondary text-[18px] leading-[1.15] font-semibold tracking-[-0.02em]">
+            {title}
+          </h3>
 
-          <p className="text-muted-foreground mt-2 max-w-[340px] text-[13px] leading-6">{text}</p>
+          <p className="text-muted-foreground mt-1.5 text-[12.5px] leading-5">{text}</p>
 
-          <div className="mt-3 space-y-1.5">
-            {visibleItems.map((item) => (
-              <div
-                key={item}
-                className="text-secondary flex items-center gap-2 text-[13px] font-medium"
-              >
-                <span className="bg-primary h-1.5 w-1.5 rounded-full" />
-                <span>{item}</span>
-              </div>
-            ))}
+          {visibleItems.length > 0 ? (
+            <p className="text-muted-foreground mt-2.5 text-[11.5px] leading-5">
+              <span className="text-secondary font-semibold">Interventi: </span>
+              {visibleItems.join(' · ')}
+              {hiddenCount > 0 ? (
+                <span className="text-primary font-semibold"> · +{hiddenCount}</span>
+              ) : null}
+            </p>
+          ) : null}
 
-            {hiddenCount > 0 && (
-              <p className="text-muted-foreground pt-1 text-[12px] font-medium">
-                +{hiddenCount} altri interventi
-              </p>
-            )}
-          </div>
-
-          <div className="text-primary mt-4 inline-flex items-center gap-2 text-[13px] font-semibold">
+          <div className="text-primary mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold">
             Vedi interventi
-            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
           </div>
         </div>
       </article>
@@ -343,21 +317,24 @@ function MacroServiceCard({
   )
 }
 
-function PopularServicesSection() {
-  const featuredGroups = [
+function CommonRequestsSection() {
+  const featuredRequestGroups = [
     {
       icon: 'bath',
-      title: 'Bagni e sanitari',
+      title: 'Bagno e sanitari',
+      text: 'Rifacimenti, doccia, sanitari e lavori collegati al bagno.',
       imageSrc: '/images/home/service-areas/bagni-sanitari.webp',
     },
     {
       icon: 'house',
-      title: 'Costruzioni e ristrutturazioni',
+      title: 'Casa e ristrutturazioni',
+      text: 'Lavori interni, cucina, muratura, pavimenti e finiture.',
       imageSrc: '/images/home/service-areas/casa-ristrutturazioni.webp',
     },
     {
       icon: 'droplets',
       title: 'Impianti e riparazioni',
+      text: 'Perdite, climatizzazione, caldaia e interventi tecnici.',
       imageSrc: '/images/home/service-areas/impianti-riparazioni.webp',
     },
   ] as const
@@ -366,22 +343,22 @@ function PopularServicesSection() {
     <SectionShell tone="muted" spacing="md">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <SectionIntro
-          eyebrow="I lavori più richiesti"
-          title="Parti dalle esigenze più comuni."
-          description="Bagni, ristrutturazioni e impianti sono tra le richieste più frequenti. Puoi partire da qui o cercare il servizio più adatto alla tua situazione."
+          eyebrow="Richieste comuni"
+          title="Esplora i lavori più vicini alla tua esigenza."
+          description="Parti da un’area di intervento e scopri quali lavori puoi richiedere."
         />
 
         <Link
           href="/categorie"
           className="text-primary hover:text-primary/80 inline-flex w-fit items-center gap-2 text-[14px] font-semibold transition"
         >
-          Vedi tutte le categorie
+          Sfoglia le categorie professionali
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 
-      <div className="mt-8 grid gap-x-6 gap-y-10 md:grid-cols-3">
-        {featuredGroups.map((preview) => {
+      <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 md:mx-0 md:grid md:grid-cols-3 md:gap-x-6 md:overflow-visible md:px-0 md:pb-0">
+        {featuredRequestGroups.map((preview) => {
           const group = macroInterventoGroups.find((item) => item.icon === preview.icon)
 
           if (!group) {
@@ -389,28 +366,30 @@ function PopularServicesSection() {
           }
 
           return (
-            <MacroServiceCard
+            <div
               key={group.slug}
-              title={preview.title}
-              text={group.description}
-              href={`/categorie/${group.slug}`}
-              imageSrc={preview.imageSrc}
-              items={group.interventoSlugs.flatMap((slug) => {
-                const nome = interventiBySlug[slug]?.nome
-                return nome ? [nome] : []
-              })}
-            />
+              className="w-[72vw] max-w-[300px] shrink-0 snap-start md:w-auto md:max-w-none"
+            >
+              <RequestPathCard
+                title={preview.title}
+                text={preview.text}
+                href={`/categorie/${group.slug}`}
+                imageSrc={preview.imageSrc}
+                items={group.interventoSlugs.flatMap((slug) => {
+                  const nome = interventiBySlug[slug]?.nome
+                  return nome ? [nome] : []
+                })}
+              />
+            </div>
           )
         })}
       </div>
 
       <div className="border-border/70 mt-8 border-t pt-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-muted-foreground max-w-[760px] text-[13px] leading-6">
-            Cerchi manutenzione, traslochi, progettazione tecnica o un intervento urgente? Esplora
-            tutte le categorie e scegli il servizio più vicino alla tua richiesta.
-          </p>
-        </div>
+        <p className="text-muted-foreground max-w-[760px] text-[13px] leading-6">
+          Non sai quale categoria scegliere? Parti dal tipo di lavoro: FixPro ti aiuta a orientarti
+          tra gli interventi e i professionisti compatibili.
+        </p>
       </div>
     </SectionShell>
   )
@@ -593,7 +572,7 @@ export default function HomePage() {
       <HowItWorksSection />
 
       <HomeKnowledgeSection />
-      <PopularServicesSection />
+      <CommonRequestsSection />
       <HomeFeaturedProfessionalsSection />
 
       <BusinessSection />

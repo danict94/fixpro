@@ -42,7 +42,7 @@ const STATUS_CONFIG = {
 
 // Categorie principali (slug e label)
 const CATEGORIES = [
-  { slug: 'bath', label: 'Bagno & Sanitari' },
+  { slug: 'bath', label: 'Bagni e Sanitari' },
   { slug: 'house', label: 'Costruzioni & Ristrutturazione' },
   { slug: 'droplets', label: 'Impianti & Riparazioni' },
   { slug: 'truck', label: 'Traslochi & Sgomberi' },
