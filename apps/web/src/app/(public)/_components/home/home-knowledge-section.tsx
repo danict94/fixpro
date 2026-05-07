@@ -47,7 +47,7 @@ export function HomeKnowledgeSection() {
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link
               href="/richiesta"
-              className="bg-primary hover:bg-primary/90 inline-flex w-fit items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold text-white transition"
+              className="bg-primary hover:bg-primary/90 inline-flex w-fit items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[13px] font-semibold text-primary-foreground transition"
             >
               Invia la richiesta
               <ArrowRight className="h-4 w-4" />

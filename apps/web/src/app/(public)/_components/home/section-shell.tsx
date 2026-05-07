@@ -5,9 +5,9 @@ type SectionShellSpacing = 'sm' | 'md' | 'lg' | 'xl'
 
 const toneClasses: Record<SectionShellTone, string> = {
   default: 'bg-background',
-  muted: 'bg-[#F6F7FB]',
-  primarySoft: 'bg-[#F4F3FF]',
-  white: 'bg-white',
+  muted: 'bg-muted',
+  primarySoft: 'bg-primary-soft',
+  white: 'bg-card',
 }
 
 const spacingClasses: Record<SectionShellSpacing, string> = {

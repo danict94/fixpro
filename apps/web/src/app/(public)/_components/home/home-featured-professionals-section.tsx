@@ -164,7 +164,7 @@ function FeaturedProfessionalBlock({ company }: { company: FeaturedProfessional 
             sizes="80px"
           />
         ) : (
-          <div className="from-primary/10 flex h-full w-full items-center justify-center bg-gradient-to-br via-white to-[#F6F7FB]">
+          <div className="from-primary/10 flex h-full w-full items-center justify-center bg-gradient-to-br via-card to-muted">
             <span className="text-primary/80 text-[24px] font-semibold">
               {initials || 'FP'}
             </span>
@@ -203,7 +203,7 @@ function FeaturedProfessionalBlock({ company }: { company: FeaturedProfessional 
         )}
 
         <div className="text-muted-foreground mt-2.5 flex flex-wrap items-center gap-2 text-[12px]">
-          <div className="flex items-center gap-0.5 text-emerald-500" aria-hidden="true">
+          <div className="flex items-center gap-0.5 text-star" aria-hidden="true">
             {[0, 1, 2, 3, 4].map((star) => (
               <Star key={star} className="h-3.5 w-3.5 fill-current stroke-current" />
             ))}
