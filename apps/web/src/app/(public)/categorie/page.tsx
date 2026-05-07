@@ -146,7 +146,7 @@ export default async function CategoriePage() {
           })}
         </div>
 
-        <section className="mt-20 rounded-[32px] border border-border/70 bg-white px-5 py-8 shadow-sm md:px-8 md:py-10">
+        <section className="mt-20 rounded-[32px] border border-border/70 bg-card px-5 py-8 shadow-sm md:px-8 md:py-10">
           <div className="max-w-3xl">
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-primary">
               Tutte le categorie disponibili
@@ -171,7 +171,7 @@ export default async function CategoriePage() {
               ))}
             </div>
           ) : (
-            <div className="mt-8 rounded-[24px] border border-dashed border-border bg-[#F6F7FB] px-5 py-8 text-center">
+            <div className="mt-8 rounded-[24px] border border-dashed border-border bg-muted px-5 py-8 text-center">
               <p className="text-[14px] font-semibold text-secondary">
                 Nessuna categoria disponibile.
               </p>
@@ -252,9 +252,9 @@ function CategoryCard({
   )
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-border/70 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-md">
       {imageSrc ? (
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#F6F7FB]">
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           <Image
             src={imageSrc}
             alt={title}
@@ -264,7 +264,7 @@ function CategoryCard({
           />
         </div>
       ) : (
-        <div className="flex aspect-[4/3] items-center justify-center bg-[#F6F7FB] px-6 text-center">
+        <div className="flex aspect-[4/3] items-center justify-center bg-muted px-6 text-center">
           <span className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
             Area lavori
           </span>
@@ -285,7 +285,7 @@ function CategoryCard({
             {visibleItems.map((item) => (
               <span
                 key={item}
-                className="rounded-full bg-[#F6F7FB] px-3 py-1 text-[12px] font-medium text-secondary ring-1 ring-border/70"
+                className="rounded-full bg-muted px-3 py-1 text-[12px] font-medium text-secondary ring-1 ring-border/70"
               >
                 {item}
               </span>

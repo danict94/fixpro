@@ -345,7 +345,7 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
             </p>
           </div>
 
-          <aside className="rounded-[28px] border border-border/70 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+          <aside className="rounded-[28px] border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur sm:p-5">
             <p className="text-[15px] font-semibold tracking-[-0.01em] text-secondary">
               Hai bisogno di questo professionista?
             </p>
@@ -404,7 +404,7 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
         </section>
 
         {categoria.interventiSecondary.length > 0 ? (
-          <section className="mt-16 rounded-[28px] border border-border/70 bg-white px-5 py-7 shadow-sm md:px-7">
+          <section className="mt-16 rounded-[28px] border border-border/70 bg-card px-5 py-7 shadow-sm md:px-7">
             <div className="max-w-[680px]">
               <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
                 Lavori correlati
@@ -425,7 +425,7 @@ function CategoriaProfessionalePage({ categoria }: { categoria: CategoriaPageDat
                 <Link
                   key={intervento.slug}
                   href={getInterventoHref(intervento.slug, categoria.slug)}
-                  className="rounded-[20px] border border-border/70 bg-[#F6F7FB] px-4 py-4 transition hover:border-primary/30 hover:bg-primary/5"
+                  className="rounded-[20px] border border-border/70 bg-muted px-4 py-4 transition hover:border-primary/30 hover:bg-primary/5"
                 >
                   <p className="text-[14px] font-semibold text-secondary">{intervento.nome}</p>
 
