@@ -25,6 +25,7 @@ enum AdminAuditAction {
   APPROVE_RESCUE
   REJECT_RESCUE
   ASSIGN_SUBSCRIPTION
+  SET_FIXPRO_PARTNER
 }
 
 model User {
@@ -229,6 +230,11 @@ model Company {
   suspendedReason    String?
   verified           Boolean             @default(false)
   adminNote          String?
+
+  isFixProPartner     Boolean   @default(false)
+  fixProPartnerRank   Int?
+  fixProPartnerSince  DateTime?
+
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   assistanceMessages AssistanceMessage[] @relation("CompanyMessages")
@@ -245,6 +251,7 @@ model Company {
   reviews            Review[]
   targetedRequests   ServiceRequest[]      @relation("TargetedRequests")
 
+  @@index([isFixProPartner, fixProPartnerRank])
   @@map("companies")
 }
 
