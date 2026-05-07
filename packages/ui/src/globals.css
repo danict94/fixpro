@@ -1,99 +1,113 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-@source '.';
-
-/*
-  FixPro Global CSS — home-first
-
-  Questo file non ridisegna FixPro.
-  Estrae dalla home attuale i token e le primitive minime
-  per dare coerenza alle altre pagine pubbliche.
-
-  Principio:
-  - @theme è la fonte unica.
-  - Le pagine devono usare token e primitive, non colori/radius casuali.
-  - Le classi legacy restano solo per compatibilità temporanea.
-*/
+@source ".";
 
 @theme {
-  /* Brand / accent */
+  /* Brand */
   --color-primary: #6e5efa;
   --color-primary-foreground: #ffffff;
-
-  /*
-    Soft primary: usato solo per pannelli evidenziati.
-    Non sostituisce bg-muted della home.
-  */
   --color-primary-soft: #f4f3ff;
 
-  /* Base */
-  --color-background: #ffffff;
-  --color-foreground: #667085;
-
-  /* Titoli / testo forte */
+  /* Neutrals */
   --color-secondary: #0f172a;
   --color-secondary-foreground: #ffffff;
 
-  /* Muted: deriva direttamente dalla home */
+  --color-background: #ffffff;
+  --color-foreground: #667085;
+
   --color-muted: #f6f7fb;
   --color-muted-foreground: #6b7280;
 
-  /* Surfaces */
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-
-  /* Lines / controls */
   --color-border: #e8eaf2;
   --color-input: #e8eaf2;
   --color-ring: #6e5efa;
 
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
   /* Semantic */
   --color-success: #22c55e;
   --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+  --color-danger-foreground: #ffffff;
   --color-info: #64748b;
   --color-star: #22c55e;
 
-  --color-destructive: #dc2626;
-  --color-destructive-foreground: #ffffff;
-
-  /*
-    Compatibilità legacy.
-    Nel nuovo codice preferire destructive.
-  */
-  --color-danger: #dc2626;
-  --color-danger-foreground: #ffffff;
-
-  /* Radius — scala coerente con la home */
+  /* Radius */
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-lg: 16px;
   --radius-xl: 24px;
-  --radius-2xl: 30px;
+  --radius-2xl: 28px;
   --radius-3xl: 36px;
-
-  /*
-    Compatibilità legacy.
-    Non usare questi token nel nuovo codice.
-  */
   --radius-reference-card: 22px;
   --radius-reference-panel: 30px;
 
   /* Fonts */
-  --font-sans:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 
-  --font-display:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Shadows */
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05),
+    0 18px 48px rgba(15, 23, 42, 0.08);
+}
 
-  /*
-    Shadows coerenti con home:
-    la home usa soprattutto shadow-sm, shadow-md e una shadow morbida per elementi floating.
-  */
-  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+:root {
+  /* Brand */
+  --color-primary: #6e5efa;
+  --color-primary-foreground: #ffffff;
+  --color-primary-soft: #f4f3ff;
 
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05), 0 14px 34px rgba(15, 23, 42, 0.07);
+  /* Neutrals */
+  --color-secondary: #0f172a;
+  --color-secondary-foreground: #ffffff;
 
-  --shadow-floating: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --color-background: #ffffff;
+  --color-foreground: #667085;
+
+  --color-muted: #f6f7fb;
+  --color-muted-foreground: #6b7280;
+
+  --color-border: #e8eaf2;
+  --color-input: #e8eaf2;
+  --color-ring: #6e5efa;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
+  --color-danger-foreground: #ffffff;
+  --color-info: #64748b;
+  --color-star: #22c55e;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-3xl: 36px;
+  --radius-reference-card: 22px;
+  --radius-reference-panel: 30px;
+
+  /* Fonts */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-display: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05),
+    0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 @layer base {
@@ -101,26 +115,28 @@
   *::before,
   *::after {
     box-sizing: border-box;
+    min-width: 0;
     border-color: var(--color-border);
   }
 
-  html {
+  html,
+  body {
     width: 100%;
-    min-height: 100%;
+    overflow-x: clip;
+  }
+
+  html {
     -webkit-text-size-adjust: 100%;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
   }
 
   body {
-    width: 100%;
-    min-height: 100svh;
     margin: 0;
-    overflow-x: clip;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -143,6 +159,24 @@
     overflow-wrap: break-word;
   }
 
+  h1 {
+    font-weight: 700;
+    letter-spacing: -0.07em;
+  }
+
+  h2 {
+    font-weight: 600;
+    letter-spacing: -0.055em;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+
   p {
     margin: 0;
     overflow-wrap: break-word;
@@ -151,17 +185,6 @@
   a {
     color: inherit;
     text-decoration: none;
-  }
-
-  /*
-    Solo link testuali non classati.
-    I link componentizzati della home/navbar/footer restano controllati da Tailwind.
-  */
-  a:not([class]) {
-    color: var(--color-primary);
-    text-decoration: underline;
-    text-decoration-thickness: from-font;
-    text-underline-offset: 0.18em;
   }
 
   button,
@@ -177,7 +200,7 @@
   }
 
   button:disabled,
-  [aria-disabled='true'] {
+  [aria-disabled="true"] {
     cursor: not-allowed;
   }
 
@@ -211,10 +234,6 @@
     outline-offset: 2px;
   }
 
-  :target {
-    scroll-margin-block: 5rem;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
@@ -231,157 +250,60 @@
 }
 
 @layer components {
-  /*
-    Container estratto dalla home:
-    mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8
-  */
-  .container-page,
-  .page-container {
+  .page-container,
+  .container-page {
     @apply mx-auto w-full max-w-[1240px] px-5 sm:px-7 lg:px-8;
   }
 
-  /*
-    Spacing pubblico coerente con la home:
-    arioso ma non enorme.
-  */
   .page-section {
     @apply py-10 sm:py-12 lg:py-14;
   }
 
-  .page-section-lg {
-    @apply py-12 sm:py-14 lg:py-16;
-  }
-
-  /*
-    Titolo sezione editoriale.
-    Coerente con BusinessSection / DecisionLinksSection,
-    non con la vecchia hero-title.
-  */
   .section-title {
     @apply text-secondary text-[28px] leading-[1.1] font-semibold sm:text-[34px];
   }
 
-  /*
-    Eyebrow stile home:
-    usato in "Per i professionisti", "Guide e costi", ecc.
-  */
-  .section-eyebrow {
-    @apply text-primary text-[12px] font-semibold tracking-[0.14em] uppercase;
-  }
-
-  /*
-    Copy sezione stile home.
-  */
-  .section-copy {
-    @apply text-muted-foreground text-[14px] leading-7;
-  }
-
-  /*
-    Superficie card estratta da:
-    bg-white shadow-sm ring-1 ring-border/60
-  */
-  .surface-card {
-    @apply bg-card text-card-foreground ring-border/60 shadow-sm ring-1;
-    border-radius: var(--radius-lg);
-  }
-
-  /*
-    Pannello/sezione card grande:
-    deriva da rounded-[24px] border/ring + shadow-sm.
-  */
-  .section-surface,
+  .surface-card,
   .surface-section {
-    @apply bg-card text-card-foreground ring-border/70 shadow-sm ring-1;
-    border-radius: var(--radius-xl);
+    @apply bg-card text-card-foreground shadow-sm ring-1 ring-border/60;
+    border-radius: var(--radius-reference-card);
   }
 
-  /*
-    Sezione muted della home.
-  */
-  .section-muted {
-    @apply bg-muted;
-  }
-
-  /*
-    Pannello soft neutro, derivato da #F6F7FB.
-  */
-  .surface-soft {
-    background-color: var(--color-muted);
-    color: var(--color-secondary);
-    border-radius: var(--radius-xl);
-  }
-
-  /*
-    Pannello soft primary, solo per evidenze leggere.
-  */
-  .surface-primary-soft,
-  .feature-panel {
+  .feature-panel,
+  .app-page-header {
     background-color: var(--color-primary-soft);
     color: var(--color-secondary);
-    border-radius: var(--radius-2xl);
+    border-radius: var(--radius-reference-panel);
   }
 
-  /*
-    Header pagina legacy/compatibilità.
-    Da usare con cautela: è più pannello che layout base.
-  */
   .app-page-header {
     @apply px-6 py-7 sm:px-7 sm:py-8 lg:px-8;
-    background-color: var(--color-primary-soft);
-    color: var(--color-secondary);
-    border-radius: var(--radius-2xl);
   }
 
-  /*
-    Link azione home:
-    text-primary hover:text-primary/80 inline-flex items-center gap-2 font-semibold transition
-  */
-  .link-primary,
-  .secondary-link {
-    @apply text-primary hover:text-primary/80 inline-flex items-center gap-2 text-[14px] font-semibold transition;
+  .primary-pill {
+    @apply inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground transition duration-150 hover:bg-primary/90;
   }
 
-  /*
-    Versione piccola, usata spesso nella home.
-  */
+  .secondary-link,
+  .link-primary {
+    @apply inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80;
+  }
+
   .link-primary-sm {
-    @apply text-primary hover:text-primary/80 inline-flex items-center gap-1.5 text-[13px] font-semibold transition;
+    @apply inline-flex items-center gap-1.5 text-[13px] font-medium text-primary transition-colors hover:text-primary/80;
   }
 
   .muted-copy {
     @apply text-muted-foreground;
   }
 
-  /*
-    CTA primary della home.
-  */
-  .btn-primary {
-    @apply bg-primary hover:bg-primary/90 text-primary-foreground inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition;
-  }
-
-  .primary-pill {
-    @apply bg-primary hover:bg-primary/90 text-primary-foreground inline-flex items-center justify-center rounded-full transition;
-  }
-
-  /*
-    Focus helper per componenti custom.
-  */
-  .focus-ring {
-    outline: none;
-  }
-
-  .focus-ring:focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
-  }
-
-  /*
-    Compatibilità legacy.
-    La home attuale NON usa questa classe.
-    Non usarla nel nuovo codice.
-  */
   .hero-title {
-    @apply text-secondary text-4xl leading-[0.97] font-bold tracking-[-0.07em] sm:text-[54px] lg:text-[62px] xl:text-[68px];
+    @apply text-secondary max-w-[540px] text-[34px] leading-[1.02] font-bold sm:text-[42px] lg:text-[50px] xl:text-[54px];
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition duration-200 hover:bg-primary/90;
+    box-shadow: var(--shadow-soft);
   }
 }
 
