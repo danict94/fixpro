@@ -67,7 +67,7 @@ export default async function InterventoCostoPage({
 
   return (
     <div id="top" className="bg-background">
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[780px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -87,7 +87,7 @@ export default async function InterventoCostoPage({
 
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
-          <div className="rounded-[24px] bg-white p-6 shadow-sm ring-1 ring-border/60">
+          <div className="rounded-[24px] bg-card p-6 shadow-sm ring-1 ring-border/60">
             <p className="text-[14px] font-semibold text-secondary">Range totale realistico</p>
             <p className="mt-2 text-[28px] font-semibold tracking-[-0.03em] text-primary">
               {pricing?.range ?? 'Preventivo su richiesta'}
@@ -106,7 +106,7 @@ export default async function InterventoCostoPage({
               {breakdown.map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                  className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <p className="text-[15px] font-semibold text-secondary">{item.label}</p>
@@ -131,7 +131,7 @@ export default async function InterventoCostoPage({
               {interventoCostFactors.map((factor) => (
                 <div
                   key={factor.title}
-                  className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                  className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
                 >
                   <p className="text-[15px] font-semibold text-secondary">{factor.title}</p>
                   <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -151,7 +151,7 @@ export default async function InterventoCostoPage({
               {examples.map((item) => (
                 <div
                   key={item.title}
-                  className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                  className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -169,7 +169,7 @@ export default async function InterventoCostoPage({
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -184,7 +184,7 @@ export default async function InterventoCostoPage({
             {faq.map((item) => (
               <div
                 key={item.question}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <h3 className="text-[16px] font-semibold text-secondary">{item.question}</h3>
                 <p className="mt-3 text-[14px] leading-7 text-muted-foreground">

@@ -76,7 +76,7 @@ export default async function InterventoCityPage({
 
   return (
     <div id="top" className="bg-background">
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[760px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -109,7 +109,7 @@ export default async function InterventoCityPage({
               </p>
             </div>
 
-            <div className="rounded-[24px] bg-white p-6 shadow-sm ring-1 ring-border/60">
+            <div className="rounded-[24px] bg-card p-6 shadow-sm ring-1 ring-border/60">
               <p className="text-[14px] font-semibold text-secondary">Prezzo indicativo a {cityData.label}</p>
               <p className="mt-2 text-[26px] font-semibold tracking-[-0.03em] text-primary">
                 {seo.priceRange}
@@ -129,7 +129,7 @@ export default async function InterventoCityPage({
               {geoProfessionisti.map((company) => (
                 <div
                   key={`${cityData.slug}-${company.name}`}
-                  className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                  className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
                 >
                   <div className="flex items-center gap-2 text-primary">
                     <Star className="h-4 w-4 fill-current stroke-current" />

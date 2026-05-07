@@ -64,7 +64,7 @@ export default async function InterventoGuidaPage({
 
   return (
     <div id="top" className="bg-background">
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[780px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -94,12 +94,12 @@ export default async function InterventoGuidaPage({
             {steps.map((step, index) => (
               <div
                 key={step.title}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="max-w-[760px]">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                         {index + 1}
                       </div>
                       <h3 className="text-[16px] font-semibold text-secondary">{step.title}</h3>
@@ -110,7 +110,7 @@ export default async function InterventoGuidaPage({
                     </p>
                   </div>
 
-                  <div className="w-full max-w-[340px] rounded-[18px] bg-[#F6F7FB] p-4">
+                  <div className="w-full max-w-[340px] rounded-[18px] bg-muted p-4">
                     <p className="text-[13px] font-semibold text-secondary">Errori comuni in questa fase</p>
                     <div className="mt-3 space-y-2">
                       {step.errors.map((error) => (
@@ -127,7 +127,7 @@ export default async function InterventoGuidaPage({
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <h2 className="text-[28px] font-semibold tracking-[-0.03em] text-secondary">
@@ -139,7 +139,7 @@ export default async function InterventoGuidaPage({
             {materials.map((item) => (
               <div
                 key={item.label}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.label}</p>
                 <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -151,7 +151,7 @@ export default async function InterventoGuidaPage({
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
@@ -162,7 +162,7 @@ export default async function InterventoGuidaPage({
                 {mistakes.map((item) => (
                   <div
                     key={item}
-                    className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                    className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
                   >
                     <p className="text-[14px] leading-7 text-muted-foreground">{item}</p>
                   </div>
@@ -178,7 +178,7 @@ export default async function InterventoGuidaPage({
                 {interventoRequestTips.map((item) => (
                   <div
                     key={item.title}
-                    className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                    className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
                   >
                     <p className="text-[15px] font-semibold text-secondary">{item.title}</p>
                     <p className="mt-2 text-[13px] leading-6 text-muted-foreground">

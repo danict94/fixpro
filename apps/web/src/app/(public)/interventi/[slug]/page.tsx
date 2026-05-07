@@ -284,7 +284,7 @@ export default async function InterventoPage({
 
   return (
     <div className="bg-background">
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[860px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -313,7 +313,7 @@ export default async function InterventoPage({
 
       <section className="py-12 sm:py-14">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
-          <div className="rounded-[24px] bg-white p-6 shadow-sm ring-1 ring-border/60">
+          <div className="rounded-[24px] bg-card p-6 shadow-sm ring-1 ring-border/60">
             <p className="text-[14px] leading-7 text-secondary">
               Il costo per {intervento.nome.toLowerCase()} varia tra{' '}
               <span className="font-semibold text-primary">{pricing?.range}</span>
@@ -335,7 +335,7 @@ export default async function InterventoPage({
             {costGroups.map((item) => (
               <div
                 key={item.label}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <p className="text-[15px] font-semibold text-secondary">{item.label}</p>
@@ -353,7 +353,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -365,7 +365,7 @@ export default async function InterventoPage({
             {examples.map((item) => (
               <div
                 key={item.title}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.title}</p>
                 <p className="mt-3 text-[13px] leading-6 text-muted-foreground">
@@ -390,12 +390,12 @@ export default async function InterventoPage({
             {steps.map((step, index) => (
               <div
                 key={step.title}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="max-w-[760px]">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                         {index + 1}
                       </div>
                       <h3 className="text-[16px] font-semibold text-secondary">{step.title}</h3>
@@ -406,7 +406,7 @@ export default async function InterventoPage({
                     </p>
                   </div>
 
-                  <div className="w-full max-w-[340px] rounded-[18px] bg-[#F6F7FB] p-4">
+                  <div className="w-full max-w-[340px] rounded-[18px] bg-muted p-4">
                     <p className="text-[13px] font-semibold text-secondary">Attenzione in questa fase</p>
                     <div className="mt-3 space-y-2">
                       {step.errors.map((error) => (
@@ -423,7 +423,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -435,7 +435,7 @@ export default async function InterventoPage({
             {decisionItems.map((item) => (
               <div
                 key={item.title}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.title}</p>
                 <p className="mt-3 text-[13px] leading-6 text-muted-foreground">
@@ -459,7 +459,7 @@ export default async function InterventoPage({
             {mistakes.map((item) => (
               <div
                 key={item}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <p className="text-[14px] leading-7 text-muted-foreground">{item}</p>
               </div>
@@ -468,7 +468,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -480,7 +480,7 @@ export default async function InterventoPage({
             {faq.map((item) => (
               <div
                 key={item.question}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60"
               >
                 <h3 className="text-[16px] font-semibold text-secondary">{item.question}</h3>
                 <p className="mt-3 text-[14px] leading-7 text-muted-foreground">
@@ -494,7 +494,7 @@ export default async function InterventoPage({
 
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
-          <div className="rounded-[28px] bg-white px-6 py-8 text-center shadow-sm ring-1 ring-border/60 sm:px-8 sm:py-10">
+          <div className="rounded-[28px] bg-card px-6 py-8 text-center shadow-sm ring-1 ring-border/60 sm:px-8 sm:py-10">
             <div className="mx-auto max-w-[720px]">
               <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
                 Hai gia un quadro chiaro del lavoro
@@ -507,7 +507,7 @@ export default async function InterventoPage({
               <div className="mt-6">
                 <Link
                   href={`/richiesta?intervento=${intervento.slug}`}
-                  className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                  className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
                 >
                   Richiedi preventivo
                 </Link>
