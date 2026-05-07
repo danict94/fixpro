@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import Link from 'next/link'
@@ -540,7 +540,7 @@ function Step3EmailSent({ email, onResend }: Step3Props) {
   return (
     <div className="space-y-5 py-2 text-center">
       <div className="feature-panel px-6 py-10 sm:px-8">
-        <div className="ring-border/60 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1">
+        <div className="ring-border/60 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-sm ring-1">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="text-primary h-7 w-7"
