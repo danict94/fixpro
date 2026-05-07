@@ -30,7 +30,7 @@ const cityLinks = [
 export default function InterventiHubPage() {
   return (
     <div className="bg-background">
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[780px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -48,7 +48,7 @@ export default function InterventiHubPage() {
             <div className="mt-6">
               <Link
                 href="/richiesta"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
               >
                 Richiedi un preventivo
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -71,7 +71,7 @@ export default function InterventiHubPage() {
               <Link
                 key={item.slug}
                 href={`/interventi/${item.slug}`}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.nome}</p>
 
@@ -89,7 +89,7 @@ export default function InterventiHubPage() {
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -102,7 +102,7 @@ export default function InterventiHubPage() {
               <Link
                 key={item.slug}
                 href={`/interventi/${item.slug}/costo`}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.label}</p>
                 <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -127,7 +127,7 @@ export default function InterventiHubPage() {
               <Link
                 key={item.slug}
                 href={`/interventi/${item.slug}/guida`}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.label}</p>
                 <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -139,7 +139,7 @@ export default function InterventiHubPage() {
         </div>
       </section>
 
-      <section className="bg-[#F6F7FB] py-16 sm:py-20">
+      <section className="bg-muted py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -152,7 +152,7 @@ export default function InterventiHubPage() {
               <Link
                 key={`${item.slug}-${item.city}`}
                 href={`/interventi/${item.slug}/${item.city}`}
-                className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
+                className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
               >
                 <p className="text-[15px] font-semibold text-secondary">{item.label}</p>
                 <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -166,7 +166,7 @@ export default function InterventiHubPage() {
 
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
-          <div className="rounded-[28px] bg-[#F4F3FF] px-6 py-8 text-center sm:px-8 sm:py-10">
+          <div className="rounded-[28px] bg-primary-soft px-6 py-8 text-center sm:px-8 sm:py-10">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
               Richiedi preventivi gratuiti
             </h2>
@@ -176,7 +176,7 @@ export default function InterventiHubPage() {
             <div className="mt-6">
               <Link
                 href="/richiesta"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
               >
                 Richiedi preventivi gratuiti
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />

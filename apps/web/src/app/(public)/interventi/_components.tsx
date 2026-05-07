@@ -42,7 +42,7 @@ export function RelatedInterventiSection({
   const related = homeInterventi.filter((item) => item.slug !== currentSlug).slice(0, 4)
 
   return (
-    <section className="bg-[#F6F7FB] py-16 sm:py-20">
+    <section className="bg-muted py-16 sm:py-20">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
         <div className="max-w-[640px]">
           <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -58,7 +58,7 @@ export function RelatedInterventiSection({
             <Link
               key={item.slug}
               href={`/interventi/${item.slug}`}
-              className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
+              className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
             >
               <p className="text-[15px] font-semibold text-secondary">{item.nome}</p>
               <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -96,7 +96,7 @@ export function SeoCitiesSection({
             <Link
               key={city.slug}
               href={`/interventi/${slug}/${city.slug}`}
-              className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
+              className="rounded-[22px] bg-card p-5 shadow-sm ring-1 ring-border/60 transition hover:shadow-md"
             >
               <p className="text-[15px] font-semibold text-secondary">{city.label}</p>
               <p className="mt-2 text-[13px] leading-6 text-muted-foreground">
@@ -123,9 +123,9 @@ export function ProgressiveCtaSection({
   const guideHref = current === 'guida' ? '#top' : `/interventi/${slug}/guida`
 
   return (
-    <section className="bg-[#F4F3FF] py-16 sm:py-20">
+    <section className="bg-primary-soft py-16 sm:py-20">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
-        <div className="rounded-[28px] bg-white px-6 py-8 text-center shadow-sm ring-1 ring-border/60 sm:px-8 sm:py-10">
+        <div className="rounded-[28px] bg-card px-6 py-8 text-center shadow-sm ring-1 ring-border/60 sm:px-8 sm:py-10">
           <div className="mx-auto max-w-[680px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
               Prossimo passo
@@ -142,14 +142,14 @@ export function ProgressiveCtaSection({
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href={costHref}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary/90"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
               >
                 Scopri i costi
               </Link>
 
               <Link
                 href={guideHref}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-white px-5 py-3 text-sm font-semibold text-secondary transition hover:bg-muted"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-3 text-sm font-semibold text-secondary transition hover:bg-muted"
               >
                 Guida completa
               </Link>
