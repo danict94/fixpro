@@ -31,7 +31,7 @@ import { expireShowcaseSubscriptions } from '@fixpro/api/showcase-subscription'
 import { formatRequestDisplayTitle, formatRequestPublishedLabel } from '@fixpro/shared'
 import { api } from '@/lib/trpc/server'
 import { Badge } from '@fixpro/ui'
-import { Card } from '@/components/ui/Card'
+import { Card } from '@fixpro/ui'
 import { RequestsZonaSorted } from './_components/requests-zona-sorted'
 
 function formatTimeAgo(date: Date): string {
