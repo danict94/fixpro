@@ -76,7 +76,7 @@ export default async function InterventoCityPage({
 
   return (
     <div id="top" className="bg-background">
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[760px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -94,7 +94,7 @@ export default async function InterventoCityPage({
 
       <InterventoInternalNav slug={intervento.slug} current="city" />
 
-      <section className="py-16 sm:py-20">
+      <section className="page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
             <div>

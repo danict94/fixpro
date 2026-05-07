@@ -67,7 +67,7 @@ export default async function InterventoCostoPage({
 
   return (
     <div id="top" className="bg-background">
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[780px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -85,7 +85,7 @@ export default async function InterventoCostoPage({
 
       <InterventoInternalNav slug={intervento.slug} current="costo" />
 
-      <section className="py-16 sm:py-20">
+      <section className="page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="rounded-[24px] bg-card p-6 shadow-sm ring-1 ring-border/60">
             <p className="text-[14px] font-semibold text-secondary">Range totale realistico</p>
@@ -169,7 +169,7 @@ export default async function InterventoCostoPage({
         </div>
       </section>
 
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">

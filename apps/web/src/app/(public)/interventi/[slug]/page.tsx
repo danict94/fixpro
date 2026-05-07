@@ -284,7 +284,7 @@ export default async function InterventoPage({
 
   return (
     <div className="bg-background">
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[860px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -353,7 +353,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -378,7 +378,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
+      <section className="page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -423,7 +423,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -447,7 +447,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
+      <section className="page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -468,7 +468,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[720px]">
             <h2 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.035em] text-secondary sm:text-[36px]">
@@ -492,7 +492,7 @@ export default async function InterventoPage({
         </div>
       </section>
 
-      <section className="py-16 sm:py-20">
+      <section className="page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="rounded-[28px] bg-card px-6 py-8 text-center shadow-sm ring-1 ring-border/60 sm:px-8 sm:py-10">
             <div className="mx-auto max-w-[720px]">

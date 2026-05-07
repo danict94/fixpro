@@ -42,7 +42,7 @@ export function RelatedInterventiSection({
   const related = homeInterventi.filter((item) => item.slug !== currentSlug).slice(0, 4)
 
   return (
-    <section className="bg-muted py-16 sm:py-20">
+    <section className="bg-muted page-section">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
         <div className="max-w-[640px]">
           <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -80,7 +80,7 @@ export function SeoCitiesSection({
   const cities = getEnabledGeoCitiesForIntervento(slug).slice(0, 3)
 
   return (
-    <section id="cities" className="py-16 sm:py-20">
+    <section id="cities" className="page-section">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
         <div className="max-w-[640px]">
           <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -123,7 +123,7 @@ export function ProgressiveCtaSection({
   const guideHref = current === 'guida' ? '#top' : `/interventi/${slug}/guida`
 
   return (
-    <section className="bg-primary-soft py-16 sm:py-20">
+    <section className="bg-primary-soft page-section">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
         <div className="rounded-[28px] bg-card px-6 py-8 text-center shadow-sm ring-1 ring-border/60 sm:px-8 sm:py-10">
           <div className="mx-auto max-w-[680px]">

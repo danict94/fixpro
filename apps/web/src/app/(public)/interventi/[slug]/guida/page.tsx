@@ -64,7 +64,7 @@ export default async function InterventoGuidaPage({
 
   return (
     <div id="top" className="bg-background">
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[780px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
@@ -82,7 +82,7 @@ export default async function InterventoGuidaPage({
 
       <InterventoInternalNav slug={intervento.slug} current="guida" />
 
-      <section className="py-16 sm:py-20">
+      <section className="page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <h2 className="text-[28px] font-semibold tracking-[-0.03em] text-secondary">
@@ -127,7 +127,7 @@ export default async function InterventoGuidaPage({
         </div>
       </section>
 
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="max-w-[640px]">
             <h2 className="text-[28px] font-semibold tracking-[-0.03em] text-secondary">
@@ -151,7 +151,7 @@ export default async function InterventoGuidaPage({
         </div>
       </section>
 
-      <section className="bg-muted py-16 sm:py-20">
+      <section className="bg-muted page-section">
         <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-2">
             <div>
