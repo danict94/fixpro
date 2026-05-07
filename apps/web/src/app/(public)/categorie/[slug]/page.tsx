@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react'
 import { cn, buttonVariants } from '@fixpro/ui'
 
 import { prisma } from '@fixpro/db'
-import { SectionShell } from '../../_components/home/section-shell'
+import { SectionShell } from '../../_components/section-shell'
 import {
   getGroupDetailInterventoSlugs,
   interventiBySlug,

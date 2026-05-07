@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 
 import { prisma } from '@fixpro/db'
-import { SectionIntro } from '../_components/home/section-intro'
-import { SectionShell } from '../_components/home/section-shell'
+import { SectionIntro } from '../_components/section-intro'
+import { SectionShell } from '../_components/section-shell'
 import {
   getGroupDetailInterventoSlugs,
   interventiBySlug,

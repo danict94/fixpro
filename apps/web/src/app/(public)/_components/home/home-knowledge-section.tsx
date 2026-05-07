@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { SectionShell } from './section-shell'
-import { SectionIntro } from './section-intro'
+import { SectionShell } from '../section-shell'
+import { SectionIntro } from '../section-intro'
 
 function WhyTextBlock({ title, text }: { title: string; text: string }) {
   return (

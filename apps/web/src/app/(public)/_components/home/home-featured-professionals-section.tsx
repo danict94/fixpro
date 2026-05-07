@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { ArrowRight, MapPin, Star } from 'lucide-react'
 import { prisma } from '@fixpro/db'
 import { buildActivePublicShowcaseCompanyWhere } from '@fixpro/api/public-showcase-company'
-import { SectionShell } from './section-shell'
-import { SectionIntro } from './section-intro'
+import { SectionShell } from '../section-shell'
+import { SectionIntro } from '../section-intro'
 
 const FEATURED_LIMIT = 3
 const FEATURED_POOL_SIZE = 12

@@ -12,9 +12,9 @@ import {
   Star,
   Zap,
 } from 'lucide-react'
-import { SectionShell } from './_components/home/section-shell'
+import { SectionShell } from './_components/section-shell'
 import { HomeFeaturedProfessionalsSection } from './_components/home/home-featured-professionals-section'
-import { SectionIntro } from './_components/home/section-intro'
+import { SectionIntro } from './_components/section-intro'
 import { HomeKnowledgeSection } from './_components/home/home-knowledge-section'
 import { interventiBySlug, macroInterventoGroups } from '@/lib/taxonomy/interventi'
 import { PublicHeroSearch } from './_components/public-hero-search'
