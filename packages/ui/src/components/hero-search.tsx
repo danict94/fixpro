@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { Search, Tag, Wrench } from 'lucide-react'
@@ -42,6 +42,7 @@ export interface HeroSearchProps {
   query?: string
   onQueryChange?: (value: string) => void
   filterMode?: 'local' | 'passthrough'
+  showSuggestionsOnFocus?: boolean
 }
 
 const MAX_RESULTS = 8
@@ -99,6 +100,7 @@ export function HeroSearch({
   query: controlledQuery,
   onQueryChange,
   filterMode = 'local',
+  showSuggestionsOnFocus = false,
 }: HeroSearchProps) {
   const [internalQuery, setInternalQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -107,10 +109,11 @@ export function HeroSearch({
   const inputRef = useRef<HTMLInputElement>(null)
   const containerId = useId()
   const query = controlledQuery ?? internalQuery
+  const trimmedQuery = query.trim()
 
   const results =
     filterMode === 'passthrough'
-      ? query.trim()
+      ? trimmedQuery.length > 0 || showSuggestionsOnFocus
         ? items.slice(0, MAX_RESULTS)
         : []
       : filterItems(items, query)
@@ -129,8 +132,15 @@ export function HeroSearch({
   }, [containerId])
 
   useEffect(() => {
-    if (query.trim().length === 0) {
-      setOpen(false)
+    if (trimmedQuery.length === 0) {
+      if (document.activeElement === inputRef.current && showSuggestionsOnFocus && results.length > 0) {
+        setOpen(true)
+      }
+
+      if (!showSuggestionsOnFocus) {
+        setOpen(false)
+      }
+
       setHighlighted(-1)
       return
     }
@@ -143,7 +153,7 @@ export function HeroSearch({
     if (filterMode === 'local') {
       setOpen(true)
     }
-  }, [filterMode, query, results.length])
+  }, [filterMode, results.length, showSuggestionsOnFocus, trimmedQuery.length])
 
   function navigateToFreeSearch() {
     const trimmed = query.trim()
@@ -151,6 +161,7 @@ export function HeroSearch({
       window.location.assign(`${searchHref}?q=${encodeURIComponent(trimmed)}`)
       return
     }
+
     window.location.assign(searchHref)
   }
 
@@ -158,9 +169,22 @@ export function HeroSearch({
     if (controlledQuery === undefined) {
       setInternalQuery(value)
     }
+
     onQueryChange?.(value)
     setHighlighted(-1)
-    setOpen(value.trim().length > 0)
+    setOpen(showSuggestionsOnFocus || value.trim().length > 0)
+  }
+
+  function handleFocus() {
+    if (showSuggestionsOnFocus || query.trim().length > 0) {
+      setOpen(true)
+    }
+  }
+
+  function handlePointerDown() {
+    if (showSuggestionsOnFocus || query.trim().length > 0) {
+      setOpen(true)
+    }
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -225,7 +249,8 @@ export function HeroSearch({
             type="text"
             value={query}
             onChange={(event) => handleInput(event.target.value)}
-            onFocus={() => query.trim() && setOpen(true)}
+            onFocus={handleFocus}
+            onPointerDown={handlePointerDown}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             autoComplete="off"
@@ -251,7 +276,7 @@ export function HeroSearch({
           id={`${containerId}-list`}
           role="listbox"
           aria-label="Suggerimenti"
-          className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-2xl border border-border bg-card shadow-card"
+          className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[70vh] overflow-y-auto overscroll-contain rounded-2xl border border-border bg-card shadow-card sm:max-h-96"
         >
           {results.map((item, index) => {
             const isHighlighted = index === highlighted

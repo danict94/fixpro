@@ -1,6 +1,7 @@
-'use client'
+﻿'use client'
 
 import { useDeferredValue, useMemo, useState } from 'react'
+import { homeInterventi } from '@fixpro/shared'
 import { HeroSearch, type SearchSuggestion } from '@fixpro/ui'
 import { trpc } from '@/lib/trpc/client'
 
@@ -29,6 +30,21 @@ type SearchServizioItem = {
   }
 }
 
+const HERO_DEFAULT_SUGGESTIONS_LIMIT = 6
+
+const defaultHeroSuggestions: SearchSuggestion[] = homeInterventi
+  .slice(0, HERO_DEFAULT_SUGGESTIONS_LIMIT)
+  .map(
+    (item): SearchSuggestion => ({
+      type: 'intervention',
+      id: item.slug,
+      nome: item.nome,
+      slug: item.slug,
+      descrizione: item.descrizione,
+      href: `/richiesta?intervento=${item.slug}`,
+    }),
+  )
+
 export function PublicHeroSearch() {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query.trim())
@@ -40,7 +56,7 @@ export function PublicHeroSearch() {
     },
   )
 
-  const items = useMemo<SearchSuggestion[]>(() => {
+  const remoteItems = useMemo<SearchSuggestion[]>(() => {
     if (deferredQuery.length < 2 || !searchQuery.data) return []
 
     const interventi = (searchQuery.data.interventi as SearchInterventoItem[]).map(
@@ -79,6 +95,8 @@ export function PublicHeroSearch() {
     return [...interventi, ...categorie, ...servizi]
   }, [deferredQuery.length, searchQuery.data])
 
+  const items = deferredQuery.length >= 2 && searchQuery.data ? remoteItems : defaultHeroSuggestions
+
   return (
     <HeroSearch
       items={items}
@@ -88,6 +106,7 @@ export function PublicHeroSearch() {
       query={query}
       onQueryChange={setQuery}
       filterMode="passthrough"
+      showSuggestionsOnFocus
     />
   )
 }
