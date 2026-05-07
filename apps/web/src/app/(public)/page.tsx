@@ -45,16 +45,16 @@ function HeroFeature({
 }) {
   const toneClasses = {
     blue: {
-      iconWrap: 'bg-white/90 ring-sky-100',
+      iconWrap: 'bg-card/90 ring-primary/15',
       icon: 'text-primary',
     },
     green: {
-      iconWrap: 'bg-white/90 ring-emerald-100',
-      icon: 'text-emerald-500',
+      iconWrap: 'bg-card/90 ring-success/15',
+      icon: 'text-success',
     },
     amber: {
-      iconWrap: 'bg-white/90 ring-amber-100',
-      icon: 'text-amber-500',
+      iconWrap: 'bg-card/90 ring-warning/20',
+      icon: 'text-warning',
     },
   }[tone]
 
@@ -164,7 +164,7 @@ function HeroSection() {
                 </div>
 
                 <div className="border-border mt-8 border-t pt-5">
-                  <div className="flex flex-wrap items-center gap-1.5 text-emerald-500">
+                  <div className="flex flex-wrap items-center gap-1.5 text-star">
                     <Star className="h-3.5 w-3.5 fill-current stroke-current" />
                     <Star className="h-3.5 w-3.5 fill-current stroke-current" />
                     <Star className="h-3.5 w-3.5 fill-current stroke-current" />
@@ -274,8 +274,8 @@ function RequestPathCard({
 
   return (
     <Link href={href} className="group block h-full">
-      <article className="ring-border/60 h-full overflow-hidden bg-white shadow-sm ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
-        <div className="relative aspect-[16/8.5] overflow-hidden rounded-tl-[30px] bg-[#F6F7FB]">
+      <article className="ring-border/60 h-full overflow-hidden bg-card shadow-sm ring-1 transition duration-300 hover:-translate-y-0.5 hover:shadow-md">
+        <div className="relative aspect-[16/8.5] overflow-hidden rounded-tl-[30px] bg-muted">
           <Image
             src={imageSrc}
             alt={title}
@@ -469,7 +469,7 @@ function DecisionLinksSection() {
   return (
     <section className="bg-background pt-0 pb-12 sm:pb-14 lg:pb-16">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-7 lg:px-8">
-        <div className="border-border/70 overflow-hidden rounded-[24px] border bg-gradient-to-br from-white via-white to-[#F6F7FB] shadow-sm">
+        <div className="border-border/70 overflow-hidden rounded-[24px] border bg-gradient-to-br from-card via-card to-muted shadow-sm">
           <div className="grid gap-0 lg:grid-cols-[0.82fr_1.18fr]">
             <div className="border-border/70 border-b px-5 py-6 sm:px-7 sm:py-7 lg:border-r lg:border-b-0">
               <p className="text-primary text-[12px] font-semibold tracking-[0.14em] uppercase">
@@ -488,7 +488,7 @@ function DecisionLinksSection() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
                 <Link
                   href="/interventi"
-                  className="bg-primary hover:bg-primary/90 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition"
+                  className="bg-primary hover:bg-primary/90 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-primary-foreground transition"
                 >
                   Scopri tutti gli interventi
                   <ArrowRight className="h-4 w-4" />
@@ -527,7 +527,7 @@ function DecisionLinksSection() {
                     <Link
                       key={slug}
                       href={`/interventi/${slug}`}
-                      className="group border-border/70 hover:border-primary/25 flex items-center justify-between gap-4 rounded-[18px] border bg-white px-4 py-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      className="group border-border/70 hover:border-primary/25 flex items-center justify-between gap-4 rounded-[18px] border bg-card px-4 py-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                     >
                       <div className="min-w-0">
                         <p className="text-secondary text-[15px] leading-5 font-semibold">
@@ -539,7 +539,7 @@ function DecisionLinksSection() {
                         </p>
                       </div>
 
-                      <span className="text-primary group-hover:bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F6F7FB] transition group-hover:text-white">
+                      <span className="text-primary group-hover:bg-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted transition group-hover:text-primary-foreground">
                         <ArrowRight className="h-4 w-4" />
                       </span>
                     </Link>
