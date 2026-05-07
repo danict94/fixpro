@@ -1,31 +1,23 @@
 'use client'
 
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import Link from 'next/link'
-import { Building2, Home } from 'lucide-react'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  StepIndicator,
-  TypeCard,
-  cn,
-} from '@fixpro/ui'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { authClient } from '@/lib/auth-client'
 import { trpc } from '@/lib/trpc/client'
 import { buildCategoriaIndex } from './profession-suggestions'
+import { RoleSelection } from './role-selection'
 import { Step1Form } from './step-1-form'
-import { MAX_ONBOARDING_CATEGORIES, OTP_COOLDOWN, STEPS } from './wizard-constants'
+import { Step2Otp } from './step-2-otp'
+import { Step3EmailSent } from './step-3-email-sent'
+import { MAX_ONBOARDING_CATEGORIES, OTP_COOLDOWN } from './wizard-constants'
 import type { RegistrazioneWizardProps, Role, SelectedCategoria } from './wizard-types'
 import { hasValidCoordinates, normalizePhone, normalizeProvince } from './wizard-utils'
+import { WizardShell } from './wizard-shell'
 
 export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
   const [roleSelected, setRoleSelected] = useState(false)
   const [role, setRole] = useState<Role>('CLIENT')
   const [step, setStep] = useState(0)
+  const [formStep, setFormStep] = useState(0)
 
   const [nome, setNome] = useState('')
   const [cognome, setCognome] = useState('')
@@ -79,6 +71,8 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
 
   function handleSelectRole(nextRole: Role) {
     setRole(nextRole)
+    setStep(0)
+    setFormStep(0)
     setRoleSelected(true)
   }
 
@@ -270,321 +264,90 @@ export function RegistrazioneWizard({ settori }: RegistrazioneWizardProps) {
   }
 
   if (!roleSelected) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <TypeCard
-            icon={Home}
-            title="Sono un cliente"
-            subtitle="Cerco professionisti per i miei lavori"
-            onClick={() => handleSelectRole('CLIENT')}
-            className="surface-card rounded-[22px] border-0 p-7 text-left shadow-none"
-            titleClassName="text-secondary"
-            descriptionClassName="muted-copy text-sm"
-          />
-
-          <TypeCard
-            icon={Building2}
-            title="Sono un'professionista"
-            subtitle="Dico di cosa mi occupo e completo i servizi dopo il primo accesso"
-            onClick={() => handleSelectRole('COMPANY')}
-            className="surface-card rounded-[22px] border-0 p-7 text-left shadow-none"
-            titleClassName="text-secondary"
-            descriptionClassName="muted-copy text-sm"
-          />
-        </div>
-
-        <p className="muted-copy text-center text-sm">
-          Hai già un account?{' '}
-          <Link href="/accedi" className="text-primary font-semibold hover:underline">
-            Accedi
-          </Link>
-        </p>
-      </div>
-    )
+    return <RoleSelection onSelectRole={handleSelectRole} />
   }
 
   return (
-    <Card className="surface-card overflow-hidden border-0 shadow-none">
-      <CardHeader className="space-y-5 px-6 pt-6 pb-3 sm:px-8">
-        <button
-          type="button"
-          onClick={() => setRoleSelected(false)}
-          className="secondary-link w-fit text-sm"
-          aria-label="Cambia tipo account"
-        >
-          {'<-'} Indietro
-        </button>
+    <WizardShell role={role} step={step} formStep={formStep} onBack={() => setRoleSelected(false)}>
+      {step === 0 && (
+        <Step1Form
+          role={role}
+          allCategories={allCategories}
+          selectedCategories={selectedCategories}
+          categoriaIds={categoriaIds}
+          city={city}
+          radiusKm={radiusKm}
+          mapsApiKey={mapsApiKey}
+          onToggleCategory={handleToggleCategory}
+          nome={nome}
+          onNome={setNome}
+          cognome={cognome}
+          onCognome={setCognome}
+          email={email}
+          onEmail={setEmail}
+          telefono={telefono}
+          onTelefono={setTelefono}
+          password={password}
+          onPassword={setPassword}
+          confermaPassword={confermaPassword}
+          onConfermaPassword={setConfermaPassword}
+          ragioneSociale={ragioneSociale}
+          onRagioneSociale={setRagioneSociale}
+          partitaIva={partitaIva}
+          onPartitaIva={setPartitaIva}
+          onCity={setCity}
+          onRadiusKm={setRadiusKm}
+          onAddressSelect={(result) => {
+            if (result.city) {
+              setCity(result.city)
+            }
 
-        <div className="space-y-2 text-center">
-          <CardTitle className="text-secondary text-2xl font-semibold sm:text-[30px]">
-            {role === 'CLIENT' ? 'Registrati come cliente' : 'Registrati come impresa'}
-          </CardTitle>
+            if (result.province) {
+              setProvince(normalizeProvince(result.province))
+            }
 
-          <p className="muted-copy mx-auto max-w-[620px] text-sm leading-6">
-            {role === 'CLIENT'
-              ? "Completa i dati, verifica il telefono e attiva l'account."
-              : "Pochi dati ora: categoria professionale e zona. I servizi specifici li completi dopo l'accesso."}
-          </p>
-        </div>
+            if (hasValidCoordinates(result.lat, result.lng)) {
+              setLat(result.lat)
+              setLng(result.lng)
+            } else {
+              setLat(null)
+              setLng(null)
+            }
+          }}
+          error={step1Error}
+          loading={step1Loading}
+          onSubmit={handleStep1Submit}
+          onFormStepChange={setFormStep}
+        />
+      )}
 
-        <div className="surface-card border-0 px-4 py-4 shadow-none">
-          <StepIndicator steps={STEPS} current={step} />
-        </div>
-      </CardHeader>
+      {step === 1 && (
+        <Step2Otp
+          telefono={telefono}
+          otp={otp}
+          onOtp={setOtp}
+          error={otpError}
+          loading={otpLoading}
+          cooldown={cooldown}
+          otpSent={otpSent}
+          onSendOtp={sendOtp}
+          onSubmit={handleOtpVerify}
+        />
+      )}
 
-      <CardContent className="px-6 pt-4 pb-6 sm:px-8 sm:pb-8">
-        {step === 0 && (
-          <Step1Form
-            role={role}
-            allCategories={allCategories}
-            selectedCategories={selectedCategories}
-            categoriaIds={categoriaIds}
-            city={city}
-            radiusKm={radiusKm}
-            mapsApiKey={mapsApiKey}
-            onToggleCategory={handleToggleCategory}
-            nome={nome}
-            onNome={setNome}
-            cognome={cognome}
-            onCognome={setCognome}
-            email={email}
-            onEmail={setEmail}
-            telefono={telefono}
-            onTelefono={setTelefono}
-            password={password}
-            onPassword={setPassword}
-            confermaPassword={confermaPassword}
-            onConfermaPassword={setConfermaPassword}
-            ragioneSociale={ragioneSociale}
-            onRagioneSociale={setRagioneSociale}
-            partitaIva={partitaIva}
-            onPartitaIva={setPartitaIva}
-            onCity={setCity}
-            onRadiusKm={setRadiusKm}
-            onAddressSelect={(result) => {
-              if (result.city) {
-                setCity(result.city)
-              }
-
-              if (result.province) {
-                setProvince(normalizeProvince(result.province))
-              }
-
-              if (hasValidCoordinates(result.lat, result.lng)) {
-                setLat(result.lat)
-                setLng(result.lng)
-              } else {
-                setLat(null)
-                setLng(null)
-              }
-            }}
-            error={step1Error}
-            loading={step1Loading}
-            onSubmit={handleStep1Submit}
-          />
-        )}
-
-        {step === 1 && (
-          <Step2Otp
-            telefono={telefono}
-            otp={otp}
-            onOtp={setOtp}
-            error={otpError}
-            loading={otpLoading}
-            cooldown={cooldown}
-            otpSent={otpSent}
-            onSendOtp={sendOtp}
-            onSubmit={handleOtpVerify}
-          />
-        )}
-
-        {step === 2 && (
-          <Step3EmailSent
-            email={email}
-            onResend={async () => {
-              await authClient.sendVerificationEmail({
-                email,
-                callbackURL:
-                  role === 'COMPANY' ? '/area-impresa/dashboard' : '/area-cliente/richieste',
-              })
-            }}
-          />
-        )}
-      </CardContent>
-    </Card>
+      {step === 2 && (
+        <Step3EmailSent
+          email={email}
+          onResend={async () => {
+            await authClient.sendVerificationEmail({
+              email,
+              callbackURL:
+                role === 'COMPANY' ? '/area-impresa/dashboard' : '/area-cliente/richieste',
+            })
+          }}
+        />
+      )}
+    </WizardShell>
   )
 }
 
-function Field({
-  label,
-  htmlFor,
-  className,
-  children,
-}: {
-  label: string
-  htmlFor?: string
-  className?: string
-  children: ReactNode
-}) {
-  return (
-    <div className={cn('space-y-1.5', className)}>
-      <label htmlFor={htmlFor} className="text-secondary text-sm font-medium">
-        {label}
-      </label>
-      {children}
-    </div>
-  )
-}
-
-interface Step2Props {
-  telefono: string
-  otp: string
-  onOtp: (v: string) => void
-  error: string | null
-  loading: boolean
-  cooldown: number
-  otpSent: boolean
-  onSendOtp: () => Promise<boolean>
-  onSubmit: (event: FormEvent) => void
-}
-
-function Step2Otp({
-  telefono,
-  otp,
-  onOtp,
-  error,
-  loading,
-  cooldown,
-  otpSent,
-  onSendOtp,
-  onSubmit,
-}: Step2Props) {
-  return (
-    <form onSubmit={onSubmit} className="space-y-5">
-      <div className="feature-panel px-6 py-8 text-center sm:px-8">
-        <p className="text-primary text-[12px] font-semibold tracking-[0.12em] uppercase">
-          Verifica telefono
-        </p>
-
-        <p className="muted-copy mt-3 text-sm leading-6">
-          Abbiamo inviato un codice di verifica al numero
-        </p>
-
-        <p className="text-secondary mt-1 text-base font-semibold">{telefono}</p>
-      </div>
-
-      <div className="surface-card px-5 py-6 sm:px-6">
-        <Field label="Codice OTP" htmlFor="otp">
-          <Input
-            id="otp"
-            value={otp}
-            onChange={(event) => onOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            required
-            placeholder="123456"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            className="rounded-full text-center text-lg tracking-[0.35em]"
-          />
-        </Field>
-
-        {error && (
-          <div className="border-danger/20 bg-danger/10 mt-4 rounded-[18px] border px-4 py-3">
-            <p className="text-danger text-sm font-medium" role="alert">
-              {error}
-            </p>
-          </div>
-        )}
-
-        <Button
-          type="submit"
-          className="primary-pill mt-5 w-full px-5 py-3"
-          disabled={loading || otp.length < 6}
-        >
-          {loading ? 'Verifica in corso...' : 'Verifica codice'}
-        </Button>
-
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={onSendOtp}
-            disabled={cooldown > 0}
-            className="text-primary disabled:text-muted-foreground text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:no-underline"
-          >
-            {cooldown > 0
-              ? `Reinvia codice (${cooldown}s)`
-              : otpSent
-                ? 'Non hai ricevuto il codice? Reinvia'
-                : 'Invia codice'}
-          </button>
-        </div>
-      </div>
-    </form>
-  )
-}
-
-interface Step3Props {
-  email: string
-  onResend: () => Promise<void>
-}
-
-function Step3EmailSent({ email, onResend }: Step3Props) {
-  const [resent, setResent] = useState(false)
-
-  async function handleResend() {
-    await onResend()
-    setResent(true)
-  }
-
-  return (
-    <div className="space-y-5 py-2 text-center">
-      <div className="feature-panel px-6 py-10 sm:px-8">
-        <div className="ring-border/60 mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-sm ring-1">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="text-primary h-7 w-7"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-            />
-          </svg>
-        </div>
-
-        <h2 className="text-secondary mt-4 text-lg font-semibold">Controlla la tua email</h2>
-
-        <p className="muted-copy mt-2 text-sm">Abbiamo inviato un link di attivazione a</p>
-
-        <p className="text-secondary mt-1 font-medium">{email}</p>
-
-        <p className="muted-copy mt-2 text-sm leading-6">
-          Clicca il link nell&apos;email per attivare il tuo account.
-        </p>
-      </div>
-
-      <div className="surface-card px-5 py-5 sm:px-6">
-        <div className="space-y-3">
-          <Link href="/accedi" className="block">
-            <Button className="primary-pill w-full px-5 py-3">Vai al login</Button>
-          </Link>
-
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={resent}
-            className="text-primary disabled:text-muted-foreground w-full text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:no-underline"
-          >
-            {resent ? 'Email reinviata' : "Non hai ricevuto l'email? Reinvia"}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
